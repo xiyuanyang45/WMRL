@@ -26,21 +26,9 @@ certain scale, **grading is the training cost**.
 
 WMRL hands grading to a world model that predicts the outcome instead of
 measuring it, which makes it batch like generation. The predicted reward is
-wrong in two separable ways, and each gets one mechanism:
-
-|  | corrects | how |
-|---|---|---|
-| 🎯 **Online Debiasing** | the systematic error | a monotone map fit online against anchor pairs, refit as the error drifts |
-| 📉 **Inverse-Variance Denoising** | the random error | fuses the two reward streams weighted by inverse variance |
-
-<div align="center">
-<img src="assets/method.png" width="92%"
-     alt="Anchor groups are graded by both the world model and real execution. The score pairs fit a monotone map that removes the bias, and the two gradient streams are fused by inverse variance to cut the noise.">
-</div>
-
-Both run off the **anchor stream**: about a tenth of groups are graded by *both*
-the world model and real execution. Those pairs are the only ground truth in the
-loop.
+wrong in two separable ways, and each gets one mechanism, both driven by an
+**anchor stream**: about a tenth of groups are graded by *both* the world model
+and real execution, and those pairs are the only ground truth in the loop.
 
 <div align="center">
 
@@ -56,6 +44,74 @@ loop.
 Roughly a third of the compute, higher on both held-out benchmarks, at both
 scales. The 9B agent also beats an off-the-shelf agent thirteen times its size.
 
+---
+
+## Contents
+
+**1 &nbsp;[How this repository is organised](#repository-layout)**
+· [The map](#the-map) · [Where to start](#where-to-start)
+
+**2 &nbsp;[Running our method](#running-our-method)**
+· [Install](#install) · [Research agents on three nodes](#research-agents-on-three-nodes)
+· [Embodied agents on one](#embodied-agents-on-one) · [What to watch](#what-to-watch-while-it-trains)
+
+**3 &nbsp;[Building your own on top of it](#building-your-own)**
+· [The loop in twelve lines](#the-loop-in-twelve-lines) · [Bring your own scorer](#bring-your-own-scorer)
+· [Swapping deeper parts](#swapping-deeper-parts)
+
+[Notes on this release](#notes-on-this-release) · [Citation](#citation)
+
+---
+
+# Repository layout
+
+Three layers, deliberately separated so you can take one without the others.
+
+### The map
+
+```
+wmrl/                the method. numpy only, no framework, no GPU, ~600 lines
+├── debias.py          Online Debiasing: the systematic error
+├── denoise.py         Inverse-Variance Denoising: the random error
+├── advantage.py       GRPO advantages over groups graded by mixed sources
+├── anchor.py          who pays for the trusted scorer, and how often
+├── scorer.py          the two-scorer contract          ← extend here
+└── loop.py            all of the above, in the right order
+
+ml_research/         track 1 — AutoResearch agents on MLE-Dojo and DSBench
+├── run.sh              the only command you need           → README
+├── cluster/            topology, shared storage, rendezvous, the launcher
+├── agent/              rollout, environment, turn loop, scheduler
+├── world_model/        the prediction server and its prompts
+├── grading/            sandbox execution server, grader clients
+├── eval/               leaderboard-percentile scoring
+└── configs/            the two runs from the paper
+
+embodied/            track 2 — VLA post-training on LIBERO-Long   → README
+tests/               99 tests, including three simulated nodes shaking hands
+assets/ · docs/      README figures · the project page
+```
+
+### Where to start
+
+| if you want to… | read |
+|---|---|
+| understand the method | [`wmrl/debias.py`](wmrl/debias.py) and [`wmrl/denoise.py`](wmrl/denoise.py), about 150 lines each including the reasoning |
+| see it end to end | [`wmrl/loop.py`](wmrl/loop.py) |
+| reproduce the paper | [§2](#running-our-method), then [`ml_research/README.md`](ml_research/README.md) |
+| use it on your own problem | [§3](#building-your-own) |
+| check what we did to the RL trainer | [`ml_research/cluster/verl_patches.py`](ml_research/cluster/verl_patches.py) |
+
+**`wmrl/` has no dependency on the rest.** It imports numpy and nothing else, so
+the method can be lifted into another codebase without taking any of the
+machinery around it. Everything under `ml_research/` and `embodied/` is that
+machinery: getting trajectories generated, getting them graded at scale, and
+getting the numbers back out.
+
+---
+
+# Running our method
+
 ## Install
 
 ```bash
@@ -64,12 +120,99 @@ pip install -r requirements.txt
 pytest tests -q                     # 99 passing, no GPU needed
 ```
 
-That is enough for `wmrl/`, the algorithm itself. Training additionally needs an
-inference backend and an RL trainer: `pip install -r requirements-train.txt`.
+That covers `wmrl/`. Training additionally needs an inference backend and an RL
+trainer, which are large and CUDA-sensitive enough to live separately:
 
-## The algorithm in twelve lines
+```bash
+pip install -r requirements-train.txt
+```
 
-`wmrl/` depends on nothing but numpy. No framework, no GPU, no cluster.
+## Research agents on three nodes
+
+A run is three nodes, one per role. The split is the point: rollout and world
+model inference batch together, sandbox execution cannot batch at all, so it is
+fenced onto its own node where it can be scaled or starved independently.
+
+<div align="center">
+
+| node | role | what it does |
+|:---:|---|---|
+| 0 | `trainer` | policy optimisation and rollout generation |
+| 1 | `world_model` | one inference engine per GPU, serving predicted rewards |
+| 2 | `sandbox` | executes solutions for the anchor stream |
+
+</div>
+
+```bash
+./ml_research/run.sh setup                 # dependencies, then the tests
+./ml_research/run.sh data                  # MLE-Dojo and DSBench, resumable
+
+export WMRL_HOSTS=node0,node1,node2        # order is role order
+export WMRL_STORE=/mnt/shared/wmrl         # any path all three mount
+export WMRL_RUN_ID=wmrl-9b-$(date +%F)
+
+./ml_research/run.sh plan                  # ← run this first, on every node
+./ml_research/run.sh train                 # then this, on every node
+./ml_research/run.sh eval checkpoints/step-155
+```
+
+`plan` starts nothing and prints the role each node resolved. It is the cheap
+way to catch a host list that does not match what the nodes call themselves,
+before anything expensive begins:
+
+```
+run wmrl-9b-2026-09-10: 3 node(s)
+  [0] node0                    trainer
+  [1] node1                    world_model   <- this node
+  [2] node2                    sandbox
+```
+
+Nothing reads a scheduler-specific variable, so the same commands work under
+Slurm, a manual ssh loop, or a managed service. More nodes are fine: any node
+past the third takes the `sandbox` role and widens the anchor stream.
+
+`ml_research/configs/wmrl_9b.yaml` and `wmrl_4b.yaml` are the settings behind
+the table above, down to the 45 training competitions. Worth noticing: **every
+correction setting is identical across the two scales.** The mechanisms were not
+retuned per model size.
+
+## Embodied agents on one
+
+The same two mechanisms on a problem that is not a coding agent at all:
+post-training a vision-language-action policy on LIBERO-Long, where the cheap
+signal is a per-frame progress prediction and the anchor is the single sparse
+success the simulator returns at the end.
+
+```bash
+./embodied/run.sh sft && ./embodied/run.sh train
+```
+
+Either signal alone barely moves the policy: the sparse outcome adds 0.9 points
+over the SFT baseline, the raw dense signal 1.8. Together under the same two
+corrections, 3.8. See [`embodied/`](embodied/).
+
+## What to watch while it trains
+
+```python
+{'step': 240, 'anchor_fraction': 0.098, 'calibrated': True,
+ 'bias_reduction': 0.61, 'anchor_weight': 1.84}
+```
+
+| | means |
+|---|---|
+| `anchor_fraction` | drifts below target when your trusted scorer's capacity binds |
+| `calibrated` | while false, you are training on **raw** cheap scores |
+| `bias_reduction` | how much within-group bias the current map removes |
+| `anchor_weight` | 1.0 until calibrated, then rises with measured disagreement |
+
+---
+
+# Building your own
+
+The method does not know what a trajectory contains, what model produced it, or
+what benchmark it came from. Three levels of change, from the cheapest.
+
+## The loop in twelve lines
 
 ```python
 from wmrl import CorrectionLoop, ScorerPair
@@ -94,25 +237,16 @@ Step 3 is the one to notice. Measuring disagreement on the *calibrated* residual
 is what couples the two mechanisms: as the map removes bias the residual
 shrinks, and the weight relaxes on its own.
 
-### What to watch while it trains
-
-```python
-{'step': 240, 'anchor_fraction': 0.098, 'calibrated': True,
- 'bias_reduction': 0.61, 'anchor_weight': 1.84}
-```
-
-| | means |
-|---|---|
-| `anchor_fraction` | drifts below target when your trusted scorer's capacity binds |
-| `calibrated` | while false, you are training on **raw** cheap scores |
-| `bias_reduction` | how much within-group bias the current map removes |
-| `anchor_weight` | 1.0 until calibrated, then rises with measured disagreement |
+<div align="center">
+<img src="assets/method.png" width="92%"
+     alt="Anchor groups are graded by both the world model and real execution. The score pairs fit a monotone map that removes the bias, and the two gradient streams are fused by inverse variance to cut the noise.">
+</div>
 
 ## Bring your own scorer
 
-WMRL only needs two ways to score a trajectory: one **cheap** and wrong, one
-**trusted** and right. A world model and a sandbox are what the paper used, not
-what the method requires.
+This is the intended extension point. WMRL needs two ways to score a trajectory:
+one **cheap** and wrong, one **trusted** and right. A world model and a sandbox
+are what the paper used, not what the method requires.
 
 ```python
 from wmrl import CallableScorer, CorrectionLoop, ScorerPair
@@ -166,86 +300,31 @@ stream can re-fit.
 Swapping the two is caught at construction, because a run with them the wrong
 way round trains without error and quietly ends up worse than doing nothing.
 
-## Reproducing the paper
+## Swapping deeper parts
 
-A run is three nodes, one per role. The split is the point: rollout and world
-model inference batch together, sandbox execution cannot batch at all, so it is
-fenced onto its own node where it can be scaled or starved independently.
+| to change | do this |
+|---|---|
+| **how often you buy ground truth** | `anchor_fraction`, or pass your own `AnchorScheduler` |
+| **how the calibration behaves** | pass an `OnlineDebiaser` with your own `min_pairs`, `refit_every`, `bins` |
+| **how hard anchors are weighted** | pass an `InverseVarianceWeighter` with your own `target_weight`, `w_max` |
+| **the RL algorithm** | use the pieces directly; nothing else imports `wmrl/loop.py` |
+| **the RL trainer** | rewrite `build_verl_overrides` in [`train_entry.py`](ml_research/cluster/train_entry.py); it is the only place the translation lives |
+| **where the anchor weight reaches the loss** | [`weight_anchor_advantages`](ml_research/cluster/verl_patches.py) is the single seam |
 
-<div align="center">
+```python
+from wmrl import AnchorScheduler, CorrectionLoop, OnlineDebiaser, ScorerPair
 
-| node | role | what it does |
-|:---:|---|---|
-| 0 | `trainer` | policy optimisation and rollout generation |
-| 1 | `world_model` | one inference engine per GPU, serving predicted rewards |
-| 2 | `sandbox` | executes solutions for the anchor stream |
-
-</div>
-
-```bash
-./ml_research/run.sh setup                 # dependencies, then the tests
-./ml_research/run.sh data                  # MLE-Dojo and DSBench, resumable
-
-export WMRL_HOSTS=node0,node1,node2        # order is role order
-export WMRL_STORE=/mnt/shared/wmrl         # any path all three mount
-export WMRL_RUN_ID=wmrl-9b-$(date +%F)
-
-./ml_research/run.sh plan                  # ← run this first, on every node
-./ml_research/run.sh train                 # then this, on every node
-./ml_research/run.sh eval checkpoints/step-155
+loop = CorrectionLoop(
+    ScorerPair(cheap, trusted),
+    debiaser=OnlineDebiaser(min_pairs=500, refit_every=32, bins=16),
+    anchor_concurrency=8,           # your trusted scorer's capacity
+)
 ```
 
-`plan` starts nothing and prints the role each node resolved. It is the cheap
-way to catch a host list that does not match what the nodes call themselves,
-before anything expensive begins:
+If your training loop is not shaped like `loop.step`, skip it and call the four
+modules yourself. `CorrectionLoop` exists only to get their order right.
 
-```
-run wmrl-9b-2026-09-10: 3 node(s)
-  [0] node0                    trainer
-  [1] node1                    world_model   <- this node
-  [2] node2                    sandbox
-```
-
-Nothing reads a scheduler-specific variable, so the same commands work under
-Slurm, a manual ssh loop, or a managed service. More nodes are fine: any node
-past the third takes the `sandbox` role and widens the anchor stream.
-
-`ml_research/configs/wmrl_9b.yaml` and `wmrl_4b.yaml` are the settings behind
-the table above, down to the 45 training competitions. Worth noticing: **every
-correction setting is identical across the two scales.** The mechanisms were not
-retuned per model size.
-
-## Beyond research agents
-
-The same two mechanisms, on a problem that is not a coding agent at all:
-post-training a vision-language-action policy on LIBERO-Long, where the cheap
-signal is a per-frame progress prediction and the anchor is the single sparse
-success the simulator returns at the end.
-
-```bash
-./embodied/run.sh sft && ./embodied/run.sh train
-```
-
-Either signal alone barely moves the policy: the sparse outcome adds 0.9 points
-over the SFT baseline, the raw dense signal 1.8. Together under the same two
-corrections, 3.8. See [`embodied/`](embodied/).
-
-## Repository map
-
-```
-wmrl/                the algorithm. numpy only, ~600 lines
-├── debias.py          Online Debiasing
-├── denoise.py         Inverse-Variance Denoising
-├── advantage.py       GRPO advantages over mixed-source groups
-├── anchor.py          who pays for the trusted scorer
-├── scorer.py          the two-scorer contract  ← extend here
-└── loop.py            all of the above, in the right order
-
-tests/               99 tests, including three simulated nodes shaking hands
-ml_research/         AutoResearch: MLE-Dojo and DSBench      → README
-embodied/            VLA post-training: LIBERO-Long          → README
-docs/                the project page
-```
+---
 
 ## Notes on this release
 
