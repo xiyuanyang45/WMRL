@@ -1,4 +1,4 @@
-"""Cross-actor grade bridge for hybrid_async (fully_async backend).
+"""Cross-actor grade bridge for the async grader (fully_async backend).
 
 WHY: fully_async's streaming RewardLoopWorker populates rm_scores by calling compute_score(response_text, task). It
 runs in a DIFFERENT Ray actor than our AgentLoop and on a verl-internal trajectory representation that does NOT carry
@@ -44,7 +44,7 @@ def _make_actor():
             self._rc_nfit  = 0          # number of refits done
             self._rc_braw  = None       # last fit's within-group b̄ BEFORE recal (diagnostic)
             self._rc_brecal = None      # last fit's within-group b̄ AFTER recal (diagnostic)
-            # an abandoned variant (hybrid_rank_recal): fit φ(z_wm)=E[z_sbx|z_wm] in STANDARDIZED (within-group z) space, applied to
+            # an abandoned variant (an abandoned variant): fit φ(z_wm)=E[z_sbx|z_wm] in STANDARDIZED (within-group z) space, applied to
             # WM-group ADVANTAGES (not rewards) so std-norm GRPO cannot undo it. Isotonic in z-space; (px,py) for np.interp.
             self._zpairs   = []         # list of (z_wm, z_sbx) standardized anchor pairs; FIFO-capped
             self._phi_px   = None       # bin centers in z_wm (increasing) for np.interp
@@ -265,7 +265,7 @@ def get_grade(decoded_response: str):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-# SANDBOX GATE — group-level demand-driven routing for hybrid_async.
+# SANDBOX GATE — group-level demand-driven routing for the async grader.
 #
 # WHY: generation is ONE shared vLLM pool (WM/sandbox don't generate); they are two GRADING backends. The slow one is
 # the sandbox (16 slots, real ML code). If too many trajectories grade on it at once they queue on env_server, and a
@@ -348,7 +348,7 @@ def sbx_release(k):
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-# ADAW pair transport — used by hybrid_adaw / hybrid_adaw_decay graders only.
+# ADAW pair transport — used by the anchor path only.
 # These live in a SEPARATE _pairs dict inside _GradeStore (never overlaps with put_grade/_d).
 # Blocking variants (ray.get) so the pair lands before the next trainer step reads it where possible.
 # ----------------------------------------------------------------------------------------------------------------------
@@ -457,7 +457,7 @@ def recal_stats():
 
 
 # ----------------------------------------------------------------------------------------------------------------------
-# an abandoned variant (hybrid_rank_recal) — φ(z_wm)=E[z_sbx|z_wm] in standardized space, applied to WM-group ADVANTAGES (not rewards),
+# an abandoned variant (an abandoned variant) — φ(z_wm)=E[z_sbx|z_wm] in standardized space, applied to WM-group ADVANTAGES (not rewards),
 # so std-norm GRPO cannot undo it. Consumer pushes within-group-standardized anchor pairs; actor fits isotonic φ.
 # ----------------------------------------------------------------------------------------------------------------------
 

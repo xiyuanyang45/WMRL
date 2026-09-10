@@ -119,13 +119,13 @@ def test_wait_for_times_out_with_context(tmp_path):
 
 def test_trainer_waits_for_both_server_nodes(tmp_path):
     store = LocalStore(tmp_path)
-    register(store, topo(1), ["http://10.0.0.1:8000"])
-    register(store, topo(2), ["http://10.0.0.2:9000"])
+    register(store, topo(1), ["http://192.0.2.1:8000"])
+    register(store, topo(2), ["http://192.0.2.2:9000"])
 
     found = await_registrations(store, topo(0), timeout=2, poll=0.05)
     assert set(found) == {"node1", "node2"}
     assert found["node1"].role == "world_model"
-    assert found["node2"].urls == ["http://10.0.0.2:9000"]
+    assert found["node2"].urls == ["http://192.0.2.2:9000"]
 
 
 def test_registrations_from_another_run_are_ignored(tmp_path):

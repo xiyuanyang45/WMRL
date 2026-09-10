@@ -30,7 +30,7 @@ need_env() {
   if [ ${#missing[@]} -gt 0 ]; then
     die "unset: ${missing[*]}
   WMRL_HOSTS   comma-separated hostnames in role order: trainer,world_model,sandbox
-  WMRL_STORE   a directory every node mounts, or s3://bucket/prefix
+  WMRL_STORE   a directory every node mounts, or s3://bucket/prefix  # audit-allow: documented example
   WMRL_RUN_ID  a name unique to this run
 
 Example:

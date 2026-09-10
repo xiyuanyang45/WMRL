@@ -12,7 +12,7 @@ Set ``WMRL_STORE`` to pick one:
 
 ===============================  =============================================
 ``/mnt/shared/wmrl``             a path all nodes mount
-``s3://bucket/prefix``           an object store
+``s3://bucket/prefix``           an object store   # audit-allow: example
 =============================== ==============================================
 
 A local path that is *not* shared between nodes will appear to work on a single
@@ -123,7 +123,7 @@ class S3Store(Store):
         self.bucket, _, self.prefix = rest.partition("/")
         self.prefix = self.prefix.rstrip("/")
         if not self.bucket:
-            raise ValueError(f"malformed store URI {uri!r}; expected s3://bucket/prefix")
+            raise ValueError(f"malformed store URI {uri!r}; expected s3://bucket/prefix")  # audit-allow: documented example
         import boto3  # imported lazily so the local backend needs no cloud SDK
 
         self._s3 = boto3.client("s3")
@@ -178,7 +178,7 @@ def open_store(uri: str | None = None, *, multi_node: bool = True) -> Store:
     if not uri:
         raise SystemExit(
             "no shared storage. Set WMRL_STORE to a path every node mounts, "
-            "or to an s3://bucket/prefix every node can reach."
+            "or to an s3://bucket/prefix every node can reach."  # audit-allow: documented example
         )
 
     if uri.startswith("s3://"):

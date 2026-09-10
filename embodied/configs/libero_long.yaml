@@ -1,0 +1,43 @@
+# WMRL on MiniVLA-1B over LIBERO-Long: the settings behind Table 3.
+#
+# The correction block is identical to the AutoResearch configs. That is the
+# claim this track exists to support: the mechanisms were not retuned for a
+# different agent, a different world model, or a different reward shape.
+
+policy: minivla-1b
+benchmark: libero-long
+world_model: robometer
+
+# ------------------------------------------------------------------ training
+steps: 2000
+group_size: 8            # rollouts per initial state
+learning_rate: 1.0e-5
+kl_beta: 4.0e-2
+max_episode_steps: 520
+rollout_workers: 8
+
+# --------------------------------------------------------------- the rewards
+# Dense: per-frame progress, collapsed by potential-based shaping. Under a
+# per-trajectory advantage the shaped return telescopes to phi(end) - phi(start).
+dense_mode: potential    # potential | final | max | success
+dense_smooth_k: 3
+dense_frames: 8          # frames sampled per rollout for the predictor
+
+# Sparse: the single success the simulator returns. This is the anchor.
+anchor_fraction: 1.0     # the simulator reports it for every rollout anyway
+anchor_groups_per_step: 1
+
+# ------------------------------------------------------- the two corrections
+# Identical to ml_research/configs/wmrl_9b.yaml.
+recalibration_min_pairs: 200
+recalibration_refit_every: 64
+recalibration_bins: 10
+
+anchor_weight_max: 4.0
+anchor_weight_target: 2.0
+anchor_weight_half_life: 64
+anchor_weight_warmup: 32
+
+# ------------------------------------------------------------------ plumbing
+log_dir: logs
+seed: 0

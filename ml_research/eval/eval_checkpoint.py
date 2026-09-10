@@ -14,7 +14,7 @@ wrapping (_derive_turn_wrap / _cap_obs / IM_END+USER_OPEN+obs+IM_END+ASST_OPEN_P
 tok, task, ovr, [], K)) is byte-identical to verl_agentic/agentic_mledojo_loop.py:run, so the eval rollout
 matches the training rollout token-for-token.
 
-DEFAULTS mirror the verl_4b_hybrid_async_se4_long training cfg (cfg_verl_mn_disagg_4b_hybrid_async_se4_long.json):
+Defaults mirror the training config, so evaluation matches training:
   K=4, OVERVIEW_MAX=1500, OBS_MAX=1024, MAX_NEW_PER_TURN=4096, THINK=0 (ENABLE_THINKING=False), EXEC_CAP=600.
 
 GRADING BACKEND = the EXACT path training used: a REMOTE GPU env_server (RemoteEnv). Training graded on GPU

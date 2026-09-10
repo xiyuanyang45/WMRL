@@ -55,7 +55,7 @@ _ENV = None
 # of the WM pool (SBX_SERVERS), so the agent sees REAL feedback. The trainer tags each batch with non_tensor
 # `grade_mode` ('wm'|'sandbox'); run() routes to the matching pool. Both pools speak the identical /grade contract.
 _GRADER = os.environ.get("GRADER", "sandbox")
-_ADAW_MODES = ("hybrid_adaw", "hybrid_adaw_decay", "wmrl", "hybrid_rank_recal")
+_ADAW_MODES = ("wmrl",)
 _ENV_SBX = None
 
 # ADAW r_wm side-grade: computed SYNCHRONOUSLY inside run() for sandbox-graded trajs and carried in the AgentLoopOutput's
@@ -109,7 +109,7 @@ def _env_sbx():
 
 def _env_for(grade_mode):
     """Pick the grading pool for this trajectory. hybrid/ADAW modes: 'sandbox'->real sandbox, else WM pool."""
-    if _GRADER in ("hybrid_async",) + _ADAW_MODES and grade_mode == "sandbox":
+    if _GRADER == "wmrl" and grade_mode == "sandbox":
         return _env_sbx()
     return _env()
 
@@ -182,7 +182,7 @@ class AgenticMLEDojoLoop(AgentLoopBase):
         # Pick this trajectory's grading pool ONCE (consistent feedback source across all K turns). grade_mode is
         # stamped per-trajectory by the backend, and read here from kwargs (non_tensor field -> run() kwarg):
         # - hybrid (one_step_off): the trainer stamps grade_mode per-batch (whole batch sandbox on grounding steps).
-        # - hybrid_async (fully_async): the rollouter (patch-7) stamps it per-GROUP via the shared sbx_gate — the whole
+        # - fully async: the rollouter (patch-7) stamps it per-GROUP via the shared sbx_gate — the whole
         #   GRPO group goes sandbox iff the gate reserved NUM_GEN sandbox slots for it, else WM. GROUP-pure (group-norm
         #   needs one reward scale) + demand-driven (sandbox flat-out, no oversubscribe; overflow -> fast WM).
         grade_mode = kwargs.get("grade_mode", "wm")
@@ -285,18 +285,18 @@ class AgenticMLEDojoLoop(AgentLoopBase):
         # (verl _postprocess copies extra_fields -> non_tensor_batch[i], so the trainer reads r_wm[i] next to
         # grade_mode[i]/traj_reward[i] — no out-of-band store/key/race). Synchronous (awaited) so it's ready at return.
         r_wm = None
-        if _GRADER in _ADAW_MODES and grade_mode == "sandbox":
+        if _GRADER == "wmrl" and grade_mode == "sandbox":
             _codes = [tr["code"] for tr in turns if tr["action"] == "execute_code" and tr.get("code")]
             if _codes:
                 r_wm = await _adaw_wm_grade(task, _codes, ovr)
-        if _GRADER in ("hybrid_async",) + _ADAW_MODES:
+        if _GRADER == "wmrl":
             # bridge our grade to the fully_async streaming reward loop (different actor, can't see reward_score):
             # key by the decoded response == the reward loop's solution_str. See grade_store.py / mledojo_reward.py.
             try:
                 import grade_store
                 # WMRL (wmrl): Path B. SANDBOX (anchor) groups push (r_wm, r_sbx) pairs to fit f and
                 # keep ground-truth reward. WM groups get the recalibrated reward f(r_wm) (bias removed). f=identity
-                # until RECAL_MIN_PAIRS anchor pairs seen ⇒ opening behaviour ≡ B (hybrid_adaw). Monotone f ⇒ f(max)=
+                # until RECAL_MIN_PAIRS anchor pairs seen ⇒ opening behaviour ≡ B (an abandoned variant). Monotone f ⇒ f(max)=
                 # max(f), so applying to best_reward (= max-over-turns WM grade) is valid.
                 if _GRADER == "wmrl":
                     if grade_mode == "sandbox":
@@ -320,7 +320,7 @@ class AgenticMLEDojoLoop(AgentLoopBase):
             num_turns=len(statuses),
             metrics=AgentLoopMetrics(**metrics),
             # traj_reward carries the agentic grade into tool_extra_fields -> the reward loop's extra_info, so the
-            # fully_async (hybrid_async) reward loop returns OUR grade via custom_reward_function (mledojo_reward.py)
+            # fully_async  reward loop returns OUR grade via custom_reward_function (mledojo_reward.py)
             # instead of crashing on default_compute_score(data_source='mledojo'). one_step_off ignores it (uses
             # reward_score directly). best_reward == reward_score, so it's a no-op there.
             # r_wm (ADAW): WM-grade of the sandbox traj's codes; None for WM-routed/non-ADAW trajs. _postprocess copies

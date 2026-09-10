@@ -1,4 +1,4 @@
-"""Custom reward function for the fully_async (hybrid_async) backend.
+"""Custom reward function for the fully_async  backend.
 
 fully_async's streaming RewardLoopWorker populates rm_scores by calling this per trajectory; it must run (disabling it
 -> KeyError('rm_scores')). Our real reward is the AgentLoop WM/sandbox grade, which the reward loop CANNOT see (verified

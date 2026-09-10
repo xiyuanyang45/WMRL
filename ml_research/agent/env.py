@@ -77,7 +77,7 @@ class RemoteEnv:
         return [(u, c) for u, _, c in self.servers]
 
     def has_free_capacity(self):
-        """Non-blocking probe: True if ANY server has a free slot right now. Used by hybrid_async demand-driven
+        """Non-blocking probe: True if ANY server has a free slot right now. Used by demand-driven
         routing (grade on the real sandbox iff it has capacity, else WM) so the sandbox runs flat-out without
         overloading (no queue backup -> bounded staleness). Probe = try-acquire + instant-release (doesn't consume)."""
         for _url, sem, _cap in self.servers:

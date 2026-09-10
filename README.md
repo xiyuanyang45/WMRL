@@ -1,66 +1,124 @@
 # WMRL — Scaling Automatic Research Agents via World Models
 
-> **Project page:** https://xiyuanyang45.github.io/WMRL/
-> **Paper:** [arXiv:2608.12564](https://arxiv.org/abs/2608.12564)
+[**Paper**](https://arxiv.org/abs/2608.12564) · [**Project page**](https://xiyuanyang45.github.io/WMRL/)
 
-RL for AutoResearch agents is bottlenecked by the environment, not the model: agent
-generation amortizes across trajectories through batching, while every candidate
-solution needs its own isolated sandbox on real machine time. As trajectories scale,
-execution dominates the training cost.
+Reinforcement learning on world model rewards, corrected by a thin stream of
+real execution.
 
-**WMRL** replaces environment execution with a world model that predicts the execution
-outcome in a few forward passes, so grading scales as gracefully as generation. Because
-the predicted reward is corrupted, WMRL keeps a thin stream of real execution (~10% of
-groups) as an *anchor signal* and spends it on two mechanisms, one per error term:
+Training a research agent with RL is bottlenecked by the environment, not the
+model. Agent generation batches, so extra trajectories are nearly free.
+Execution does not: every candidate solution needs its own sandbox on real
+machine time. Past a certain scale, grading *is* the training cost.
 
-| Mechanism | Target | What it does |
+WMRL hands the grading to a world model that predicts the outcome instead of
+measuring it. That makes grading batch like generation, and removes the
+bottleneck. The predicted reward is wrong in two separable ways, and each gets
+one mechanism:
+
+| | corrects | how |
 |---|---|---|
-| **Online Debiasing** | the `O(B²)` bias term | fits a monotone map `f̂` (isotonic regression) on anchor score pairs and recasts world model scores through it, refit each step to track drift |
-| **Inverse-Variance Denoising** | the `O(σ²)` noise term | fuses the anchor and world model gradient estimates weighted by inverse variance, attaining a variance strictly below either stream alone |
+| **Online Debiasing** | the systematic error | a monotone map fit online against anchor pairs, refit as the error drifts |
+| **Inverse-Variance Denoising** | the random error | fuses the anchor and world model streams weighted by inverse variance |
 
-Both are proven to strictly improve the convergence guarantee.
+Both are driven by the **anchor stream**: about a tenth of groups are graded by
+both the world model and real execution, and those pairs are the only ground
+truth in the loop.
 
-## Results
+At 4B and 9B this trains on roughly a third of the compute and still scores
+higher on both held-out benchmarks. The 9B agent beats an off-the-shelf agent
+thirteen times its size.
 
-| | GPU-hours | MLE-Dojo (test) Avg | DSBench Avg |
-|---|---|---|---|
-| Qwen3.5-4B-GRPO (real env) | 883 | 15.2 | 25.7 |
-| **Qwen3.5-4B-WMRL** | **286** (3.1× less) | **16.4** | **28.8** |
-| Qwen3.5-9B-GRPO (real env) | 1174 | 18.8 | 31.2 |
-| **Qwen3.5-9B-WMRL** | **349** (3.4× less) | **21.6** | **32.8** |
-
-Leaderboard percentile (%), higher is better; both benchmarks hold out tasks never
-trained on. The post-trained 4B agent surpasses off-the-shelf Kimi-48B-A3B and the 9B
-agent surpasses Nemotron-120B-A12B. The recipe also transfers to embodied VLA
-post-training, lifting LIBERO-Long success by 3.8 points. Full tables are on the
-[project page](https://xiyuanyang45.github.io/WMRL/).
-
-## Code
-
-A conceptual, community reference implementation of the two correction mechanisms is in
-preparation and will be released here. The production training stack used for the paper
-is not part of this release.
-
-## Repository layout
+## What is here
 
 ```
-docs/
-  index.html         # the page, served by GitHub Pages from main /docs
-  style.css
-  app.js             # sticky nav, scroll reveal, chart tooltips
-  static/            # figures from the paper
-  tools/
-    make_charts.py   # renders the three result charts as inline SVG
+wmrl/              the algorithm. numpy only, no framework, no GPU
+tests/             65 tests, including three simulated nodes shaking hands
+ml_research/       track 1: AutoResearch agents on MLE-Dojo and DSBench
+embodied/          track 2: VLA post-training on LIBERO-Long
+docs/              the project page
 ```
 
-The result charts are generated, not hand-written, so every number traces back to
-one table at the top of `docs/tools/make_charts.py`. After editing that table:
+`wmrl/` is the part worth reading first. It is four short modules and depends on
+nothing but numpy, so the method can be lifted into another codebase without
+taking any of the rest.
+
+```python
+from wmrl import AnchorScheduler, InverseVarianceWeighter, OnlineDebiaser
+
+debias   = OnlineDebiaser(min_pairs=200, refit_every=64)
+weighter = InverseVarianceWeighter(target_weight=2.0)
+anchors  = AnchorScheduler(fraction=0.10, min_per_step=1)
+
+for step in training_steps:
+    anchor_ids = set(anchors.select(n_groups))
+    for gid, group in enumerate(groups):
+        if gid in anchor_ids:                  # buy ground truth
+            r_env, r_wm = sandbox(group), world_model(group)
+            debias.push_many(r_wm, r_env)      # feeds the calibration
+            weighter.observe_group(debias.apply(r_wm), r_env)
+            scores, source = r_env, "env"
+        else:                                  # cheap, corrected
+            scores, source = debias.apply(world_model(group)), "wm"
+```
+
+Before it has seen enough anchor pairs the calibration is exactly the identity
+and the anchor weight is exactly 1, so a run without ground truth degrades to
+training on raw world model rewards rather than to something undefined.
+
+## Running a training job
+
+A run is three nodes, one per role:
+
+| node | role | what it does |
+|---|---|---|
+| 0 | `trainer` | policy optimisation and rollout generation |
+| 1 | `world_model` | one inference engine per GPU, serving predicted rewards |
+| 2 | `sandbox` | executes candidate solutions for the anchor stream |
+
+The split is the point. Rollout and world model inference batch together;
+sandbox execution cannot batch at all, so it is fenced onto its own node where
+it can be scaled or starved without touching the other two.
 
 ```bash
-python3 docs/tools/make_charts.py
+./ml_research/run.sh setup                 # dependencies, then the test suite
+./ml_research/run.sh data                  # MLE-Dojo and DSBench, resumable
+
+export WMRL_HOSTS=node0,node1,node2        # order is role order
+export WMRL_STORE=/mnt/shared/wmrl         # any path all three mount
+export WMRL_RUN_ID=wmrl-9b-$(date +%F)
+
+./ml_research/run.sh plan                  # check each node agrees who it is
+./ml_research/run.sh train                 # run this on all three
+./ml_research/run.sh eval checkpoints/step-155
 ```
 
-which re-splices the SVG into `docs/index.html` in place.
+`plan` starts nothing and is the cheap way to catch a host list that does not
+match what the nodes call themselves. Nothing reads a scheduler-specific
+variable, so the same commands work under Slurm, a manual ssh loop, or a managed
+service.
+
+More nodes are fine: any node past the third takes the `sandbox` role and widens
+the anchor stream.
+
+## Reproducing the paper
+
+`ml_research/configs/wmrl_9b.yaml` and `wmrl_4b.yaml` are the settings behind the
+two rows of Table 1, down to the 45 training competitions in
+`configs/tasks_train.txt`. Worth noticing: every correction setting is identical
+across the two scales. The mechanisms were not retuned per model size.
+
+The 9B run is 3200 steps and about 20 hours on three 8-GPU nodes.
+
+## What this release is not
+
+The production training stack this work ran on is not public. This is a clean
+reimplementation of the method and the pipeline around it, built to be read and
+re-run rather than to be byte-identical to the internal runs. Baselines are not
+included: the repository implements one method.
+
+`ml_research/cluster/audit_release.py` checks the tree for infrastructure detail
+that should not ship, by class rather than by literal. It runs clean, and it
+runs in CI.
 
 ## Citation
 
@@ -74,3 +132,7 @@ which re-splices the SVG into `docs/index.html` in place.
   year    = {2026}
 }
 ```
+
+## License
+
+Apache 2.0. See [LICENSE](LICENSE).
