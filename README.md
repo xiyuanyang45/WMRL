@@ -48,18 +48,16 @@ scales. The 9B agent also beats an off-the-shelf agent thirteen times its size.
 
 ## Contents
 
-**1 &nbsp;[How this repository is organised](#repository-layout)**
-· [The map](#the-map) · [Where to start](#where-to-start)
+**1 &nbsp; [How this repository is organised](#repository-layout)**<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[The map](#the-map) &nbsp;·&nbsp; [Where to start](#where-to-start)
 
-**2 &nbsp;[Running our method](#running-our-method)**
-· [Install](#install) · [Research agents on three nodes](#research-agents-on-three-nodes)
-· [Embodied agents on one](#embodied-agents-on-one) · [What to watch](#what-to-watch-while-it-trains)
+**2 &nbsp; [Running our method](#running-our-method)**<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[Install](#install) &nbsp;·&nbsp; [Research agents on three nodes](#research-agents-on-three-nodes) &nbsp;·&nbsp; [Embodied agents on one](#embodied-agents-on-one) &nbsp;·&nbsp; [What to watch](#what-to-watch-while-it-trains)
 
-**3 &nbsp;[Building your own on top of it](#building-your-own)**
-· [The loop in twelve lines](#the-loop-in-twelve-lines) · [Bring your own scorer](#bring-your-own-scorer)
-· [Swapping deeper parts](#swapping-deeper-parts)
+**3 &nbsp; [Building your own on top of it](#building-your-own)**<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[The loop in twelve lines](#the-loop-in-twelve-lines) &nbsp;·&nbsp; [Bring your own scorer](#bring-your-own-scorer) &nbsp;·&nbsp; [Swapping deeper parts](#swapping-deeper-parts)
 
-[Notes on this release](#notes-on-this-release) · [Citation](#citation)
+[Notes on this release](#notes-on-this-release) &nbsp;·&nbsp; [Citation](#citation)
 
 ---
 
