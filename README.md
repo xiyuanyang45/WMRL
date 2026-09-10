@@ -44,11 +44,23 @@ is not part of this release.
 ## Repository layout
 
 ```
-docs/            # project page, served by GitHub Pages from main /docs
-  index.html
+docs/
+  index.html         # the page, served by GitHub Pages from main /docs
   style.css
-  static/        # figures from the paper
+  app.js             # sticky nav, scroll reveal, chart tooltips
+  static/            # figures from the paper
+  tools/
+    make_charts.py   # renders the three result charts as inline SVG
 ```
+
+The result charts are generated, not hand-written, so every number traces back to
+one table at the top of `docs/tools/make_charts.py`. After editing that table:
+
+```bash
+python3 docs/tools/make_charts.py
+```
+
+which re-splices the SVG into `docs/index.html` in place.
 
 ## Citation
 
