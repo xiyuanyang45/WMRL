@@ -4,11 +4,11 @@
 
 ### Scaling Automatic Research Agents via World Models
 
-[![arXiv](https://img.shields.io/badge/arXiv-2608.12564-b31b1b.svg?style=flat-square)](https://arxiv.org/abs/2608.12564)
-[![Project page](https://img.shields.io/badge/Project-page-13294b.svg?style=flat-square)](https://xiyuanyang45.github.io/WMRL/)
-[![License](https://img.shields.io/badge/License-Apache_2.0-4a5568.svg?style=flat-square)](LICENSE)
-[![Python](https://img.shields.io/badge/Python-3.10+-3776ab.svg?style=flat-square)](https://www.python.org/)
-[![Tests](https://img.shields.io/badge/tests-99_passing-1a6d35.svg?style=flat-square)](tests/)
+[![arXiv](https://img.shields.io/badge/arXiv-2608.12564-b31b1b?style=flat-square&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2608.12564)
+[![Hugging Face](https://img.shields.io/badge/Hugging%20Face-Paper-d97706?style=flat-square&logo=huggingface&logoColor=white)](https://huggingface.co/papers/2608.12564)
+[![Project page](https://img.shields.io/badge/Project-page-13294b?style=flat-square&logo=githubpages&logoColor=white)](https://xiyuanyang45.github.io/WMRL/)
+[![Code](https://img.shields.io/badge/Code-WMRL-24292f?style=flat-square&logo=github&logoColor=white)](https://github.com/xiyuanyang45/WMRL)
+[![License](https://img.shields.io/badge/License-Apache%202.0-4a5568?style=flat-square&logo=opensourceinitiative&logoColor=white)](LICENSE)
 
 **Train an RL agent on predicted rewards, and pay for real ones only where it counts.**
 
