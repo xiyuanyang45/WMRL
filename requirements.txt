@@ -1,0 +1,9 @@
+# The algorithm library and the cluster layer. Everything here is small and
+# stable; the inference backend and RL trainer are deliberately not pinned,
+# see ml_research/README.md.
+numpy>=1.24
+pyyaml>=6.0
+requests>=2.31
+
+# tests
+pytest>=7.4

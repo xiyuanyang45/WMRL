@@ -1,0 +1,92 @@
+# WMRL on a 9B agent: the configuration behind the 9B row of Table 1.
+#
+# Three nodes, eight GPUs each, 80GB per card. Fewer or smaller cards will run,
+# but the numbers in the paper come from this shape. Reported cost: 349 GPU-hours
+# against 1174 for the same agent trained on real execution throughout.
+#
+# Anything here can be overridden per run without editing the file:
+#   WMRL_CFG_LEARNING_RATE=5e-7 python -m ml_research.cluster.launch --config ...
+
+model_path: ${WMRL_MODELS}/qwen3.5-9b   # the agent, and the world model: same backbone
+task_list: ml_research/configs/tasks_train.txt
+
+# ---------------------------------------------------------------- optimisation
+steps: 3200
+epochs: 1
+save_every: 5
+learning_rate: 1.0e-6
+kl_beta: 4.0e-2
+entropy_coef: 0.002
+
+group_size: 8          # rollouts per research question; the group GRPO centers over
+train_batch_size: 8    # groups per step
+max_turns: 4           # agent turns before the trajectory is graded
+max_new_tokens_per_turn: 4096
+observation_max_tokens: 1024
+overview_max_tokens: 1500
+
+# ------------------------------------------------------------- trainer node 0
+# The node splits its eight cards between generation and optimisation, which is
+# what lets rollout and training overlap instead of alternating.
+rollout_gpus: 0,1,2,3
+train_gpus: 4,5,6,7
+rollout_tensor_parallel: 2
+rollout_gpu_util: 0.65     # leaves headroom for the weight-transfer transient
+param_offload: false
+optimizer_offload: false
+weight_sync_bucket_mb: 512
+
+# Asynchronous rollout: the trainer does not wait for a full batch of finished
+# trajectories. Staleness is bounded rather than eliminated, because eliminating
+# it costs exactly the pipelining the world model was introduced to buy.
+async_rollout: true
+staleness_threshold: 9
+sync_every_steps: 2
+partial_rollout: true
+max_concurrent_samples: 12
+max_queue_size: 24
+
+# --------------------------------------------------------- world model node 1
+# One engine per card, all serving the agent's own backbone. Sharing the
+# backbone rules out any gain coming from distilling a stronger model.
+world_model_gpus: 0,1,2,3,4,5,6,7
+world_model_port: 8000
+world_model_gpu_util: 0.90      # dedicated cards: take the KV cache
+world_model_max_model_len: 12288
+world_model_capacity: 256       # in-flight cap; grading should never be the queue
+world_model_max_tokens: 1024    # predictions run ~235 tokens
+world_model_reward_samples: 1
+world_model_feedback_samples: 2
+
+# -------------------------------------------------------------- sandbox node 2
+# The only component that costs real machine time, and the reason the other two
+# exist. Its capacity bounds the anchor stream.
+sandbox_gpus: 0,1,2,3,4,5,6,7
+sandbox_port: 8100
+sandbox_slots_per_gpu: 3
+sandbox_gpu_mem_gb: 13
+sandbox_exec_cap_s: 600     # a submission that has not finished by now scores zero
+sandbox_cores: 6
+sandbox_mem_gb: 64
+
+# ------------------------------------------------------------- the anchor stream
+# How much ground truth to buy, and how hard to lean on it once bought.
+anchor_groups_per_step: 2       # floor: a step with none feeds the calibration nothing
+anchor_concurrency_cap: 24      # ceiling: a burst must not starve the rollout workers
+anchor_min_wait_s: 180
+
+# --- Online Debiasing: the O(B^2) term
+recalibration_min_pairs: 200    # stay at identity until this many anchor pairs exist
+recalibration_refit_every: 64   # refit this often, so the map tracks the drift
+recalibration_bins: 10
+
+# --- Inverse-Variance Denoising: the O(sigma^2) term
+anchor_weight_max: 4.0
+anchor_weight_target: 2.0       # what the weight equals at calibration time
+anchor_weight_half_life: 64
+anchor_weight_warmup: 32
+
+# ------------------------------------------------------------------- plumbing
+log_dir: logs
+rendezvous_timeout_s: 2400
+server_boot_timeout_s: 1800
