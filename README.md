@@ -12,7 +12,8 @@
 
 **Train an RL agent on predicted rewards, and pay for real ones only where it counts.**
 
-<img src="docs/static/fig1.png" width="100%" alt="Generation batches; execution does not. Execution hits capacity first.">
+<img src="assets/teaser.png" width="100%"
+     alt="Generation batches across trajectories; execution does not, so execution hits the compute ceiling first. WMRL removes that ceiling.">
 
 </div>
 
@@ -31,6 +32,11 @@ wrong in two separable ways, and each gets one mechanism:
 |---|---|---|
 | 🎯 **Online Debiasing** | the systematic error | a monotone map fit online against anchor pairs, refit as the error drifts |
 | 📉 **Inverse-Variance Denoising** | the random error | fuses the two reward streams weighted by inverse variance |
+
+<div align="center">
+<img src="assets/method.png" width="92%"
+     alt="Anchor groups are graded by both the world model and real execution. The score pairs fit a monotone map that removes the bias, and the two gradient streams are fused by inverse variance to cut the noise.">
+</div>
 
 Both run off the **anchor stream**: about a tenth of groups are graded by *both*
 the world model and real execution. Those pairs are the only ground truth in the
