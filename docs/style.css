@@ -154,35 +154,66 @@ h1.title .accent { color: var(--orange); }
 .logos:hover img { opacity: 1; }
 
 /* ---------- buttons ---------- */
+/* Each destination carries its own colour and mark, so the row reads as five
+   different places rather than five copies of one. Light by default with the
+   brand as the ink; the brand fills in on hover, which keeps the row quiet
+   until you reach for it. */
 
 .buttons {
   display: flex; flex-wrap: wrap; gap: 10px;
   justify-content: center; margin: 32px 0 54px;
 }
+
 .btn {
+  --brand: var(--navy);
+  --brand-ink: #fff;
+  --brand-edge: #cdd4de;
+
   display: inline-flex; align-items: center; gap: 8px;
-  padding: 11px 21px; border-radius: 10px;
-  background: var(--navy); color: #fff;
-  font-size: 15px; font-weight: 550; letter-spacing: .005em;
-  border: 1px solid var(--navy);
+  padding: 11px 20px; border-radius: 10px;
+  background: #fff;
+  color: var(--brand);
+  font-size: 15px; font-weight: 600; letter-spacing: .005em;
+  border: 1px solid var(--brand-edge);
   box-shadow: var(--shadow-sm);
-  transition: background .16s, border-color .16s, transform .14s, box-shadow .16s;
+  transition: background .16s, border-color .16s, color .16s,
+              transform .14s, box-shadow .16s;
 }
 .btn:hover {
-  background: var(--navy-deep); border-color: var(--navy-deep); color: #fff;
-  transform: translateY(-2px); box-shadow: var(--shadow-md);
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--brand-ink);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
-.btn svg { width: 16px; height: 16px; flex: none; }
-.btn.ghost { background: #fff; color: var(--navy); border-color: #cdd4de; }
-.btn.ghost:hover { background: #fff; color: var(--orange); border-color: var(--orange); }
+.btn svg { width: 17px; height: 17px; flex: none; }
+.btn .emoji { font-size: 17px; line-height: 1; filter: saturate(1.05); }
+
+.btn-arxiv  { --brand: #b31b1b; --brand-edge: #e8c4c4; }
+.btn-pdf    { --brand: #475569; --brand-edge: #cfd6e0; }
+.btn-github { --brand: #24292f; --brand-edge: #ccd1d8; }
+.btn-hf     { --brand: #c2740a; --brand-edge: #f0d59b; --brand-ink: #fff; }
+.btn-cite   { --brand: var(--navy); --brand-edge: #cdd4de; }
+
+/* Not live yet: dashed, and it does not lift or fill. It keeps its colour so
+   the row still reads as five destinations rather than four and a gap. */
 .btn.soon {
-  background: #fff; color: var(--ink-faint);
-  border-color: var(--rule); border-style: dashed;
-  box-shadow: none; cursor: default; pointer-events: none;
+  border-style: dashed;
+  box-shadow: none;
+  cursor: default;
+  pointer-events: none;
+  opacity: .75;
 }
+.btn.soon:hover { background: #fff; color: var(--brand); transform: none; }
 .btn.soon .tag-soon {
   font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
-  padding: 2px 6px; border-radius: 5px; background: var(--tint); color: var(--ink-faint);
+  padding: 2px 6px; border-radius: 5px;
+  background: color-mix(in srgb, var(--brand) 12%, #fff);
+  color: var(--brand);
+}
+
+@media (max-width: 540px) {
+  .btn { padding: 10px 15px; font-size: 14px; }
 }
 
 /* ---------- sections ---------- */
