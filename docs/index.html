@@ -203,7 +203,7 @@
 
     <div class="thm reveal">
       <span class="thm-tag">Theorem 1</span>
-      <h4>Training on world model rewards alone</h4>
+      <h4>Training on world model rewards <span class="qual">(baseline)</span></h4>
       <div class="eq"><img src="static/eq-thm1.svg" style="width:423px"
         alt="J star minus expected J of theta_T is at most epsilon(T) plus O(M squared B squared) plus O(gamma V_WM)"></div>
       <p>The bias arrives at full size, the noise arrives damped by the step size. Neither term
@@ -212,8 +212,8 @@
     </div>
 
     <div class="thm thm-ours reveal">
-      <span class="thm-tag">Theorem 2 &middot; WMRL</span>
-      <h4>Training with both corrections</h4>
+      <span class="thm-tag">Theorem 2</span>
+      <h4>Training with WMRL <span class="qual">(ours)</span></h4>
       <div class="eq"><img src="static/eq-thm2.svg" style="width:536px"
         alt="The same bound with the bias term divided by 1 + T over T naught and the variance term divided by 1 + V_WM over V_E"></div>
       <p>The leading term is unchanged and the two error terms align one for one with Theorem 1,

@@ -337,14 +337,15 @@ figcaption .fignum {
 /* ---------- theorem blocks ---------- */
 
 .thm {
-  background: var(--tint);
+  background: #fff;
   border: 1px solid var(--rule);
   border-radius: 14px;
   padding: 22px 26px 20px;
   margin: 24px 0 0;
+  box-shadow: var(--shadow-sm);
 }
 .thm + .thm { margin-top: 16px; }
-.thm.thm-ours { border-left: 3px solid var(--orange); background: #fff; box-shadow: var(--shadow-sm); }
+.thm.thm-ours { border-left: 3px solid var(--orange); }
 .thm-tag {
   display: block;
   font-family: var(--mono);
@@ -360,9 +361,27 @@ figcaption .fignum {
 .thm p { font-size: 15.5px; line-height: 1.62; color: var(--ink-soft); margin: 0; }
 .thm p b { color: var(--ink); font-weight: 640; }
 
-/* rendered maths: glyphs are paths, so these scale without a font dependency */
-.eq { margin: 18px 0 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.eq img { display: block; max-width: 100%; height: auto; }
+/* the heading qualifier that says which arm this theorem describes */
+.thm h4 .qual { color: var(--ink-faint); font-weight: 500; }
+.thm.thm-ours h4 .qual { color: var(--orange); }
+
+/* rendered maths: glyphs are paths, so these scale without a font dependency.
+   The frame mirrors the thmbox the paper puts each theorem in (remarkblue,
+   RGB 31 78 140, at 7% fill against a 90% rule). */
+.eq {
+  margin: 18px 0 16px;
+  padding: 15px 18px;
+  border: 1px solid rgba(31, 78, 140, .5);
+  border-radius: 8px;
+  background: rgba(31, 78, 140, .055);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.thm-ours .eq {
+  border-color: rgba(232, 88, 10, .45);
+  background: rgba(232, 88, 10, .05);
+}
+.eq img { display: block; margin: 0 auto; max-width: 100%; height: auto; }
 .eq-inline { display: inline-block; padding: 0 2px; }
 .eq-inline img { height: 21px; width: auto; vertical-align: -4px; max-width: 100%; }
 .den { margin: 2px 0 10px; }
@@ -370,7 +389,7 @@ figcaption .fignum {
 
 @media (max-width: 620px) {
   .thm { padding: 18px 16px 16px; }
-  .eq img { min-width: 0; }
+  .eq { padding: 12px 12px; }
 }
 
 /* ---------- charts ---------- */
