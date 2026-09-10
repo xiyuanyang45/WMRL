@@ -22,9 +22,6 @@
   --grid:        #e6e9ee;
 
   --maxw:    1120px;
-  /* fixed px, not ch: `ch` scales with font-size, so a 18px lead and a 17px
-     paragraph would end at different right edges */
-  --measure: 840px;
 
   --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   --mono: "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
@@ -44,14 +41,11 @@ body {
   color: var(--ink);
   font-family: var(--sans);
   font-size: 17px;
-  line-height: 1.65;
+  line-height: 1.72;
   -webkit-font-smoothing: antialiased;
 }
 
 .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 26px; }
-
-/* one consistent text measure everywhere; figures and tables stay full width */
-.measure { max-width: var(--measure); }
 
 a { color: var(--navy); text-decoration: none; border-bottom: 1px solid rgba(19,41,75,.28); }
 a:hover { border-bottom-color: var(--orange); color: var(--orange); }
@@ -268,7 +262,7 @@ h3 { font-size: 18.5px; font-weight: 650; margin: 34px 0 10px; color: var(--ink)
 p { margin: 0 0 16px; }
 p:last-child { margin-bottom: 0; }
 
-.lead { font-size: 18px; line-height: 1.6; color: var(--ink); }
+.lead { font-size: 18.5px; line-height: 1.62; color: var(--ink); }
 
 /* ---------- figures ---------- */
 
@@ -326,7 +320,7 @@ figcaption b { color: var(--ink); font-weight: 620; }
 
 /* ---------- prose ---------- */
 
-.abstract { font-size: 17px; line-height: 1.72; color: var(--ink-soft); }
+.abstract { font-size: 17px; line-height: 1.78; color: var(--ink-soft); }
 .abstract b { color: var(--ink); font-weight: 600; }
 
 /* ---------- method cards ---------- */
@@ -403,15 +397,17 @@ figcaption b { color: var(--ink); font-weight: 620; }
 
 .tick-line   { stroke: var(--grid); stroke-width: 1; }
 .axis-line   { stroke: #cfd5de; stroke-width: 1; }
-.tick-label  { fill: #8b93a0; font-size: 11.5px; }
-.axis-title  { fill: #6d7583; font-size: 12px; font-weight: 500; }
-.group-label { fill: var(--ink-soft); font-size: 12.5px; font-weight: 550; }
+.tick-label  { fill: #8b93a0; font-size: 11px; }
+.axis-title  { fill: #6d7583; font-size: 11.5px; font-weight: 500; }
+.panel-title { fill: var(--ink); font-size: 13px; font-weight: 650; }
+.group-label { fill: var(--ink-soft); font-size: 12px; font-weight: 550; }
 .val-label   { fill: #6d7583; font-size: 10.5px; font-variant-numeric: tabular-nums; }
 .val-label.hi{ fill: var(--ink); font-weight: 700; }
-.pt-label    { fill: var(--ink-soft); font-size: 11.5px; font-weight: 600; }
+.pt-label    { fill: var(--ink-soft); font-size: 11px; font-weight: 600; }
 .ref-line    { stroke: #b6bdc8; stroke-width: 1; }
-.ref-label   { fill: #8b93a0; font-size: 11px; }
-.hint-label  { fill: #9aa2ae; font-size: 11.5px; font-style: italic; }
+.ref-label   { fill: #8b93a0; font-size: 10.5px; }
+.cut-label   { fill: #7b8390; font-size: 10.5px; font-weight: 600; }
+.gain-label  { fill: var(--green); font-size: 11.5px; font-weight: 600; }
 .connector   { stroke: #c3c9d2; stroke-width: 1.5; fill: none; }
 
 .hit { fill: transparent; cursor: pointer; }
