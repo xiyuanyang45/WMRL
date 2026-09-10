@@ -27,6 +27,8 @@ from wmrl.debias import (
     fit_calibration,
 )
 from wmrl.denoise import InverseVarianceWeighter, group_disagreement
+from wmrl.loop import CorrectionLoop, StepResult
+from wmrl.scorer import CallableScorer, Scorer, ScorerPair
 
 __version__ = "0.1.0"
 
@@ -40,4 +42,9 @@ __all__ = [
     "Group",
     "group_advantages",
     "AnchorScheduler",
+    "Scorer",
+    "ScorerPair",
+    "CallableScorer",
+    "CorrectionLoop",
+    "StepResult",
 ]
