@@ -9,10 +9,10 @@ single table at the top of this file. Run from anywhere:
 Each chart is written between a pair of markers in index.html, so re-running
 replaces the previous render in place.
 
-Palette: slots 1-3 of the reference categorical palette, validated all-pairs on
-a light surface (worst CVD dE 9.2, worst normal-vision dE 24.0). Aqua sits below
-3:1 against white, so every aqua mark carries a visible direct label and the full
-tables live directly below each chart.
+Palette: one accent over a steel value ramp. The three baselines separate by
+lightness alone (untrained -> pure world model -> real environment), so the
+series stay distinguishable in greyscale and under any colour-vision deficiency,
+and orange is reserved for our runs and appears nowhere else on the page.
 
 Axis ranges are fitted to the data rather than padded out to round numbers, so
 the plot area carries marks instead of margin. Bars still start at zero; only the
@@ -27,10 +27,14 @@ INDEX = os.path.normpath(os.path.join(HERE, "..", "index.html"))
 
 # ---------------------------------------------------------------- palette
 
-REAL = "#2a78d6"   # slot 1 blue   - RL in real environment (GRPO)
-OURS = "#eb6834"   # slot 2 orange - WMRL (ours)
-WM   = "#1baf7a"   # slot 3 aqua   - RL with pure world model
-CTX  = "#a8afba"   # de-emphasis gray - untrained base / SFT
+# One blue family stepped by lightness, with the accent reserved for WMRL.
+# Validated all-pairs on a white surface: worst normal-vision dE 16.6, worst CVD
+# dE 15.9. CTX sits at 1.8:1 against white, so every CTX mark carries a visible
+# direct label and the full tables sit below each chart (the relief rule).
+REAL = "#2f5e8c"   # deep blue    - RL in real environment (GRPO)
+OURS = "#e8580a"   # accent       - WMRL (ours)
+WM   = "#708db0"   # mid blue     - RL with pure world model
+CTX  = "#b3c0d0"   # pale blue    - untrained base / SFT
 
 # ---------------------------------------------------------------- data
 # Every number below is from main_text.tex (arXiv:2608.12564), Tables 1-3.
@@ -64,7 +68,8 @@ ABLATION = [
     ("Online Debiasing only",            15.7, 28.1, 19.4, 31.7),
     ("Both (WMRL)",                      16.4, 28.8, 21.6, 32.8),
 ]
-ABL_SHADES = ["#bcc4cf", "#98a3b2", "#717e92", OURS]
+# ordinal ramp: monotone lightness, adjacent dL >= 0.06, light end 2.04:1
+ABL_SHADES = ["#a5b5c8", "#6d8bab", "#35598a", OURS]
 
 SERIES_COLOR = {"base": CTX, "real": REAL, "wm": WM, "ours": OURS}
 SERIES_NAME = {
@@ -98,6 +103,24 @@ def bar(x, y_top, y_base, w, fill):
     )
 
 
+def star(cx, cy, r, fill, cls="mark"):
+    """Five-point star, the marker the poster uses for our runs."""
+    import math
+    pts = []
+    for i in range(10):
+        a = -math.pi / 2 + i * math.pi / 5
+        rad = r if i % 2 == 0 else r * 0.44
+        pts.append(f"{cx + rad * math.cos(a):.1f},{cy + rad * math.sin(a):.1f}")
+    return (f'<polygon class="{cls}" points="{" ".join(pts)}" fill="{fill}" '
+            f'stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>')
+
+
+def diamond(cx, cy, r, fill, cls="mark"):
+    return (f'<polygon class="{cls}" points="{cx:.1f},{cy - r:.1f} {cx + r:.1f},{cy:.1f} '
+            f'{cx:.1f},{cy + r:.1f} {cx - r:.1f},{cy:.1f}" fill="{fill}" '
+            f'stroke="#fff" stroke-width="1.6"/>')
+
+
 def figure(title, sub, legend_html, view, body, caption, defs=""):
     w, h = view
     return f"""<figure class="chart reveal">
@@ -116,7 +139,10 @@ def figure(title, sub, legend_html, view, body, caption, defs=""):
 
 ARROW_DEFS = """<defs>
       <marker id="arw" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-        <path d="M 0 1 L 9 5 L 0 9 z" fill="#b9c0ca"/>
+        <path d="M 0 1 L 9 5 L 0 9 z" fill="#aab3c0"/>
+      </marker>
+      <marker id="arwo" viewBox="0 0 10 10" refX="8.4" refY="5" markerWidth="5.4" markerHeight="5.4" orient="auto-start-reverse">
+        <path d="M 0 1.2 L 9 5 L 0 8.8 z" fill="#e8580a"/>
       </marker>
     </defs>"""
 
@@ -124,18 +150,19 @@ ARROW_DEFS = """<defs>
 # ---------------------------------------------------------------- chart A
 
 def chart_tradeoff():
-    """Cost against capability, one panel per benchmark."""
-    W, H = 780, 318
-    ml, mr, mt, mb = 44, 12, 40, 46
-    gap = 72
+    """Cost against capability, one panel per benchmark, poster styling."""
+    W, H = 780, 366
+    ml, mr, mt, mb = 48, 16, 52, 54
+    gap = 64
     pw = (W - ml - mr - gap) / 2
     y0, y1 = mt, H - mb
-    xlo, xhi = 205, 1245
+    xlo, xhi = 190, 1265
 
     panels = [
-        ("MLE-Dojo (test)", 2, 11.6, 22.9, (12, 15, 18), NEMOTRON[0]),
-        ("DSBench",         3, 21.9, 34.1, (22, 26, 30, 34), NEMOTRON[1]),
+        ("MLE-Dojo (test)", 2, 11.4, 23.6, (12, 15, 18, 21), NEMOTRON[0]),
+        ("DSBench",         3, 21.7, 34.9, (22, 26, 30, 34), NEMOTRON[1]),
     ]
+    GAIN = {"4B": ("3.1&#215;", "+1.2", "+3.1"), "9B": ("3.4&#215;", "+2.8", "+1.6")}
 
     s = []
     for pi, (ptitle, idx, ylo, yhi, yticks, ref) in enumerate(panels):
@@ -148,57 +175,73 @@ def chart_tradeoff():
         def Y(v, ylo=ylo, yhi=yhi):
             return y1 - (v - ylo) / (yhi - ylo) * (y1 - y0)
 
-        s.append(f'<text class="panel-title" x="{px0:.0f}" y="{mt - 17}">{esc(ptitle)}</text>')
+        ry = Y(ref)
+        # the band our runs have to clear: everything above the best off-the-shelf agent
+        s.append(f'<rect x="{px0:.1f}" y="{y0:.1f}" width="{pw:.1f}" height="{max(ry - y0, 0):.1f}" '
+                 f'fill="#f2f5f9"/>')
+        s.append(f'<text class="panel-title" x="{px0:.0f}" y="{mt - 30}">{esc(ptitle)}</text>')
+        s.append(f'<text class="zone-label" x="{px0 + 6:.0f}" y="{mt - 12}">'
+                 f'above Nemotron-120B, the best untrained agent ({ref})</text>')
 
         for t in yticks:
             s.append(f'<line class="tick-line" x1="{px0:.1f}" y1="{Y(t):.1f}" x2="{px1:.1f}" y2="{Y(t):.1f}"/>')
-            s.append(f'<text class="tick-label" x="{px0 - 8:.1f}" y="{Y(t) + 4:.1f}" text-anchor="end">{t}</text>')
-        for t in (250, 500, 750, 1000, 1200):
+            s.append(f'<text class="tick-label" x="{px0 - 9:.1f}" y="{Y(t) + 4:.1f}" text-anchor="end">{t}</text>')
+        for t in (250, 500, 750, 1000, 1250):
             s.append(f'<text class="tick-label" x="{X(t):.1f}" y="{y1 + 18}" text-anchor="middle">{t}</text>')
         s.append(f'<line class="axis-line" x1="{px0:.1f}" y1="{y1}" x2="{px1:.1f}" y2="{y1}"/>')
-
-        ry = Y(ref)
         s.append(f'<line class="ref-line" x1="{px0:.1f}" y1="{ry:.1f}" x2="{px1:.1f}" y2="{ry:.1f}"/>')
-        s.append(f'<text class="ref-label" x="{px1:.1f}" y="{ry - 6:.1f}" text-anchor="end">Nemotron-120B, untrained ({ref})</text>')
 
-        for scale, factor in (("4B", "3.1&#215;"), ("9B", "3.4&#215;")):
+        # ---- the two moves: real-environment run -> ours, cheaper and higher ----
+        for scale in ("4B", "9B"):
             g = next(r for r in AUTORESEARCH if r[4] == scale and r[5] == "real")
             o = next(r for r in AUTORESEARCH if r[4] == scale and r[5] == "ours")
             gx, gy = X(g[1]), Y(g[idx])
             ox, oy = X(o[1]), Y(o[idx])
-            apex = min(gy, oy) - 25
+            up = scale == "9B"
+            bow = -34 if up else 26
+            mx, my = (gx + ox) / 2, (gy + oy) / 2 + bow
             s.append(
-                f'<path class="connector" marker-end="url(#arw)" '
-                f'd="M {gx - 11:.1f} {gy - 6:.1f} Q {(gx + ox) / 2:.1f} {apex:.1f} {ox + 12:.1f} {oy - 7:.1f}"/>'
+                f'<path class="lift" marker-end="url(#arwo)" '
+                f'd="M {gx - 13:.1f} {gy + (-7 if up else 8):.1f} Q {mx:.1f} {my:.1f} {ox + 15:.1f} {oy + (-5 if up else 7):.1f}"/>'
             )
-            s.append(
-                f'<text class="cut-label" x="{(gx + ox) / 2:.1f}" y="{apex + 8:.1f}" text-anchor="middle">'
-                f'{factor} less compute</text>'
-            )
+            cut, pts = GAIN[scale][0], GAIN[scale][1 if idx == 2 else 2]
+            midy = (gy + oy) / 2
+            lx = mx if up else ox + 0.40 * (gx - ox)
+            ly = midy - 43 if up else midy + 40
+            s.append(f'<text class="cut-label" x="{lx:.1f}" y="{ly:.1f}" text-anchor="middle">'
+                     f'{cut} cheaper<tspan class="cut-gain" dx="7">{pts} pts</tspan></text>')
 
-        for name, gh, mle, ds, scale, series in AUTORESEARCH:
-            if gh is None:
-                continue
-            v = mle if idx == 2 else ds
-            cx, cy = X(gh), Y(v)
-            col = SERIES_COLOR[series]
-            s.append(f'<circle class="mark" cx="{cx:.1f}" cy="{cy:.1f}" r="6.5" fill="{col}" stroke="#fff" stroke-width="2"/>')
-            if series == "wm":
-                s.append(f'<text class="pt-label" x="{cx + 11:.1f}" y="{cy + 4:.1f}" text-anchor="start">{scale}</text>')
-            else:
-                dy = -13 if series == "ours" else 19
-                s.append(f'<text class="pt-label" x="{cx:.1f}" y="{cy + dy:.1f}" text-anchor="middle">{scale}</text>')
-            s.append(
-                f'<circle class="hit" cx="{cx:.1f}" cy="{cy:.1f}" r="15" '
-                f'data-name="{esc(name)}" data-color="{col}" '
-                f'data-val="{esc(ptitle)} {fmt(v)} &#183; {gh} GPU-hours"/>'
-            )
+        # ---- points, weakest to strongest ----
+        for series in ("wm", "real", "ours"):
+            for name, gh, mle, ds, scale, ser in AUTORESEARCH:
+                if gh is None or ser != series:
+                    continue
+                v = mle if idx == 2 else ds
+                cx, cy = X(gh), Y(v)
+                col = SERIES_COLOR[series]
+                if series == "ours":
+                    s.append(star(cx, cy, 10.5, col))
+                    s.append(f'<text class="pt-label pt-ours" x="{cx:.1f}" y="{cy - 16:.1f}" '
+                             f'text-anchor="middle">WMRL {scale}</text>')
+                elif series == "real":
+                    s.append(f'<circle class="mark" cx="{cx:.1f}" cy="{cy:.1f}" r="6.5" fill="{col}" '
+                             f'stroke="#fff" stroke-width="2"/>')
+                    s.append(f'<text class="pt-label" x="{cx:.1f}" y="{cy + 20:.1f}" '
+                             f'text-anchor="middle">GRPO {scale}</text>')
+                else:
+                    s.append(diamond(cx, cy, 6.4, col))
+                s.append(
+                    f'<circle class="hit" cx="{cx:.1f}" cy="{cy:.1f}" r="16" '
+                    f'data-name="{esc(name)}" data-color="{col}" '
+                    f'data-val="{esc(ptitle)} {fmt(v)} &#183; {gh} GPU-hours"/>'
+                )
 
-    s.append(f'<text class="axis-title" x="{W / 2:.0f}" y="{H - 7}" text-anchor="middle">Training compute (GPU-hours). Vertical axis is leaderboard percentile.</text>')
+    s.append(f'<text class="axis-title" x="{W / 2:.0f}" y="{H - 7}" text-anchor="middle">'
+             f'Training compute (GPU-hours) &#8594;&#160;&#160;&#183;&#160;&#160;up and to the left is better</text>')
 
     return figure(
-        "Compute against capability, on both held-out benchmarks",
-        "Up and to the left is better. At both scales and on both benchmarks WMRL sits above the real-environment run it replaces, on roughly a third of the compute.",
+        "Cheaper and better at the same time",
+        "Each arrow is one agent scale moving off the real-environment run it replaces: left is compute saved, up is score gained. Both land in the band above the strongest off-the-shelf agent.",
         legend([(SERIES_NAME["real"], REAL), (SERIES_NAME["wm"], WM), (SERIES_NAME["ours"], OURS)]),
         (W, H),
         "\n      ".join(s),

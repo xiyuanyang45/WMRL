@@ -14,7 +14,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -96,9 +96,9 @@
 <section class="teaser">
   <div class="wrap">
     <figure class="reveal">
-      <img src="static/fig1.png" alt="AutoResearch trajectories scale asymmetrically: generation batches, execution does not.">
+      <div class="figscroll"><img src="static/fig1.png" alt="AutoResearch trajectories scale asymmetrically: generation batches, execution does not."></div>
       <figcaption>
-        <b>AutoResearch trajectories scale asymmetrically, making environment execution the bottleneck, and WMRL removes it.</b>
+        <span class="fignum">Fig. 1</span><b>AutoResearch trajectories scale asymmetrically, making environment execution the bottleneck, and WMRL removes it.</b>
         <b>(a)</b> Per research question, the agent proposes a group of solutions <i>S<sub>i</sub></i>, graded by execution into rewards <i>r<sub>i</sub></i>, and RL demands a massive number of such trajectories.
         <b>(b)</b> Per trajectory, generation amortizes compute via batching, but execution needs one isolated sandbox per solution.
         <b>(c)</b> Execution compute thus hits capacity first in traditional RL, whereas WMRL scales without this limit.
@@ -107,24 +107,28 @@
   </div>
 </section>
 
-<section>
+<section class="statband">
   <div class="wrap">
     <div class="stats reveal">
       <div class="stat">
-        <span class="num">Reduce Time <em>3.1&times;&ndash;3.4&times;</em></span>
-        <span class="lbl">Training compute against RL with a real sandbox, at both 4B and 9B.</span>
+        <span class="t">Reduce Time</span>
+        <span class="k">3.1&ndash;3.4&times;</span>
+        <span class="lbl"><b>less training compute</b> than RL in a real sandbox, at 4B and 9B.</span>
       </div>
       <div class="stat">
-        <span class="num">Improved ML Research <em>+2.8</em></span>
-        <span class="lbl">Held-out MLE-Dojo percentile, 9B agent over same-scale GRPO.</span>
+        <span class="t">Machine Learning Research</span>
+        <span class="k">+2.8</span>
+        <span class="lbl"><b>MLE-Dojo percentile</b> for the 9B agent over same-scale GRPO.</span>
       </div>
       <div class="stat">
-        <span class="num">Ours (9B) <em>&gt; 120B</em></span>
-        <span class="lbl">Our post-trained 9B agent beats off-the-shelf Nemotron-120B-A12B.</span>
+        <span class="t">Outperforms Larger Agents</span>
+        <span class="k k-text">Ours 9B &gt; 120B</span>
+        <span class="lbl">Our 9B agent <b>beats off-the-shelf Nemotron-120B</b>, 13&times; its size.</span>
       </div>
       <div class="stat">
-        <span class="num">Improved Robot Arm <em>+3.8</em></span>
-        <span class="lbl">LIBERO-Long success rate, showing the recipe transfers to VLAs.</span>
+        <span class="t">Long-Horizon Manipulation</span>
+        <span class="k">+3.8</span>
+        <span class="lbl"><b>LIBERO-Long success rate</b> &mdash; the recipe transfers to embodied VLAs.</span>
       </div>
     </div>
   </div>
@@ -134,7 +138,7 @@
   <div class="wrap">
     <div class="h2row"><span class="no">01</span><h2>Overview</h2></div>
     <div class="abstract reveal">
-      <p>An AutoResearch agent writes code, runs it, and learns from what comes back. RL is the natural way to train one, but the two halves of a trajectory do not scale alike. Generation batches, so extra trajectories are nearly free. Execution does not: every candidate solution needs its own sandbox on real machine time. Past a certain scale, grading is the training cost.</p>
+      <p class="lead">An AutoResearch agent writes code, runs it, and learns from what comes back. RL is the natural way to train one, but the two halves of a trajectory do not scale alike. Generation batches, so extra trajectories are nearly free. Execution does not: every candidate solution needs its own sandbox on real machine time. Past a certain scale, grading is the training cost.</p>
 
       <p><b>WMRL</b> hands the grading to a world model, which reads the task and the submitted solution and predicts the outcome in a few forward passes. Now grading batches like generation, and the bottleneck is gone. The predicted reward is imperfect, though, and the imperfection splits cleanly into a systematic bias and a zero-mean noise. Both show up in the convergence bound as their own error term.</p>
 
@@ -143,7 +147,7 @@
   </div>
 </section>
 
-<section id="method">
+<section id="method" class="alt">
   <div class="wrap">
     <div class="h2row"><span class="no">02</span><h2>Method</h2></div>
     <p class="lead reveal">
@@ -158,9 +162,9 @@
     </p>
 
     <figure class="reveal" style="margin-top:30px">
-      <img src="static/fig2.png" alt="WMRL corrects world model rewards in two steps: online debiasing and inverse-variance denoising.">
+      <div class="figscroll"><img src="static/fig2.png" alt="WMRL corrects world model rewards in two steps: online debiasing and inverse-variance denoising."></div>
       <figcaption>
-        <b>WMRL corrects the world model rewards in two steps.</b> Each row is one of the <i>m</i> groups in a batch. Every group is graded by the world model into biased, noisy scores <span class="math">r&#770;</span>, and anchor groups are also graded by real execution. The monotone map <span class="math">f&#770;</span> is fit on the score pairs (<b>Online Debiasing</b>) to remove the bias, and <span class="math">g<sub>E</sub></span> and <span class="math">g<sub>WM</sub></span> are fused by <b>Inverse-Variance Denoising</b> to lower the update variance.
+        <span class="fignum">Fig. 2</span><b>WMRL corrects the world model rewards in two steps.</b> Each row is one of the <i>m</i> groups in a batch. Every group is graded by the world model into biased, noisy scores <span class="math">r&#770;</span>, and anchor groups are also graded by real execution. The monotone map <span class="math">f&#770;</span> is fit on the score pairs (<b>Online Debiasing</b>) to remove the bias, and <span class="math">g<sub>E</sub></span> and <span class="math">g<sub>WM</sub></span> are fused by <b>Inverse-Variance Denoising</b> to lower the update variance.
       </figcaption>
     </figure>
 
@@ -189,93 +193,96 @@
 <!--CHART:tradeoff-->
 <figure class="chart reveal">
   <div class="chart-head">
-    <p class="chart-title">Compute against capability, on both held-out benchmarks</p>
-    <p class="chart-sub">Up and to the left is better. At both scales and on both benchmarks WMRL sits above the real-environment run it replaces, on roughly a third of the compute.</p>
+    <p class="chart-title">Cheaper and better at the same time</p>
+    <p class="chart-sub">Each arrow is one agent scale moving off the real-environment run it replaces: left is compute saved, up is score gained. Both land in the band above the strongest off-the-shelf agent.</p>
   </div>
-  <div class="legend"><span><i style="background:#2a78d6"></i>RL in real environment (GRPO)</span><span><i style="background:#1baf7a"></i>RL with pure world model</span><span><i style="background:#eb6834"></i>WMRL (ours)</span></div>
-  <div class="plotwrap"><svg class="plot" viewBox="0 0 780 318" role="img" aria-label="Every trained point shares the data split, the scaffold, and the hyperparameters, so the horizontal distance is the price of the reward signal and nothing else. The rule in each panel is the strongest off-the-shelf agent in the comparison, 13 times larger than our 9B agent and post-trained on nothing.">
+  <div class="legend"><span><i style="background:#2f5e8c"></i>RL in real environment (GRPO)</span><span><i style="background:#708db0"></i>RL with pure world model</span><span><i style="background:#e8580a"></i>WMRL (ours)</span></div>
+  <div class="plotwrap"><svg class="plot" viewBox="0 0 780 366" role="img" aria-label="Every trained point shares the data split, the scaffold, and the hyperparameters, so the horizontal distance is the price of the reward signal and nothing else. The rule in each panel is the strongest off-the-shelf agent in the comparison, 13 times larger than our 9B agent and post-trained on nothing.">
     <defs>
       <marker id="arw" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-        <path d="M 0 1 L 9 5 L 0 9 z" fill="#b9c0ca"/>
+        <path d="M 0 1 L 9 5 L 0 9 z" fill="#aab3c0"/>
+      </marker>
+      <marker id="arwo" viewBox="0 0 10 10" refX="8.4" refY="5" markerWidth="5.4" markerHeight="5.4" orient="auto-start-reverse">
+        <path d="M 0 1.2 L 9 5 L 0 8.8 z" fill="#e8580a"/>
       </marker>
     </defs>
-      <text class="panel-title" x="44" y="23">MLE-Dojo (test)</text>
-      <line class="tick-line" x1="44.0" y1="263.8" x2="370.0" y2="263.8"/>
-      <text class="tick-label" x="36.0" y="267.8" text-anchor="end">12</text>
-      <line class="tick-line" x1="44.0" y1="202.2" x2="370.0" y2="202.2"/>
-      <text class="tick-label" x="36.0" y="206.2" text-anchor="end">15</text>
-      <line class="tick-line" x1="44.0" y1="140.6" x2="370.0" y2="140.6"/>
-      <text class="tick-label" x="36.0" y="144.6" text-anchor="end">18</text>
-      <text class="tick-label" x="58.1" y="290" text-anchor="middle">250</text>
-      <text class="tick-label" x="136.5" y="290" text-anchor="middle">500</text>
-      <text class="tick-label" x="214.8" y="290" text-anchor="middle">750</text>
-      <text class="tick-label" x="293.2" y="290" text-anchor="middle">1000</text>
-      <text class="tick-label" x="355.9" y="290" text-anchor="middle">1200</text>
-      <line class="axis-line" x1="44.0" y1="272" x2="370.0" y2="272"/>
-      <line class="ref-line" x1="44.0" y1="89.3" x2="370.0" y2="89.3"/>
-      <text class="ref-label" x="370.0" y="83.3" text-anchor="end">Nemotron-120B, untrained (20.5)</text>
-      <path class="connector" marker-end="url(#arw)" d="M 245.5 192.1 Q 163.0 148.5 81.4 166.5"/>
-      <text class="cut-label" x="163.0" y="156.5" text-anchor="middle">3.1&#215; less compute</text>
-      <path class="connector" marker-end="url(#arw)" d="M 336.7 118.2 Q 218.4 41.7 101.1 59.7"/>
-      <text class="cut-label" x="218.4" y="49.7" text-anchor="middle">3.4&#215; less compute</text>
-      <circle class="mark" cx="256.5" cy="198.1" r="6.5" fill="#2a78d6" stroke="#fff" stroke-width="2"/>
-      <text class="pt-label" x="256.5" y="217.1" text-anchor="middle">4B</text>
-      <circle class="hit" cx="256.5" cy="198.1" r="15" data-name="Qwen3.5-4B-GRPO" data-color="#2a78d6" data-val="MLE-Dojo (test) 15.2 &#183; 883 GPU-hours"/>
-      <circle class="mark" cx="347.7" cy="124.2" r="6.5" fill="#2a78d6" stroke="#fff" stroke-width="2"/>
-      <text class="pt-label" x="347.7" y="143.2" text-anchor="middle">9B</text>
-      <circle class="hit" cx="347.7" cy="124.2" r="15" data-name="Qwen3.5-9B-GRPO" data-color="#2a78d6" data-val="MLE-Dojo (test) 18.8 &#183; 1174 GPU-hours"/>
-      <circle class="mark" cx="64.1" cy="245.3" r="6.5" fill="#1baf7a" stroke="#fff" stroke-width="2"/>
-      <text class="pt-label" x="75.1" y="249.3" text-anchor="start">4B</text>
-      <circle class="hit" cx="64.1" cy="245.3" r="15" data-name="Qwen3.5-4B-WM" data-color="#1baf7a" data-val="MLE-Dojo (test) 12.9 &#183; 269 GPU-hours"/>
-      <circle class="mark" cx="83.2" cy="179.6" r="6.5" fill="#1baf7a" stroke="#fff" stroke-width="2"/>
-      <text class="pt-label" x="94.2" y="183.6" text-anchor="start">9B</text>
-      <circle class="hit" cx="83.2" cy="179.6" r="15" data-name="Qwen3.5-9B-WM" data-color="#1baf7a" data-val="MLE-Dojo (test) 16.1 &#183; 330 GPU-hours"/>
-      <circle class="mark" cx="69.4" cy="173.5" r="6.5" fill="#eb6834" stroke="#fff" stroke-width="2"/>
-      <text class="pt-label" x="69.4" y="160.5" text-anchor="middle">4B</text>
-      <circle class="hit" cx="69.4" cy="173.5" r="15" data-name="Qwen3.5-4B-Ours" data-color="#eb6834" data-val="MLE-Dojo (test) 16.4 &#183; 286 GPU-hours"/>
-      <circle class="mark" cx="89.1" cy="66.7" r="6.5" fill="#eb6834" stroke="#fff" stroke-width="2"/>
-      <text class="pt-label" x="89.1" y="53.7" text-anchor="middle">9B</text>
-      <circle class="hit" cx="89.1" cy="66.7" r="15" data-name="Qwen3.5-9B-Ours" data-color="#eb6834" data-val="MLE-Dojo (test) 21.6 &#183; 349 GPU-hours"/>
-      <text class="panel-title" x="442" y="23">DSBench</text>
-      <line class="tick-line" x1="442.0" y1="270.1" x2="768.0" y2="270.1"/>
-      <text class="tick-label" x="434.0" y="274.1" text-anchor="end">22</text>
-      <line class="tick-line" x1="442.0" y1="194.0" x2="768.0" y2="194.0"/>
-      <text class="tick-label" x="434.0" y="198.0" text-anchor="end">26</text>
-      <line class="tick-line" x1="442.0" y1="118.0" x2="768.0" y2="118.0"/>
-      <text class="tick-label" x="434.0" y="122.0" text-anchor="end">30</text>
-      <line class="tick-line" x1="442.0" y1="41.9" x2="768.0" y2="41.9"/>
-      <text class="tick-label" x="434.0" y="45.9" text-anchor="end">34</text>
-      <text class="tick-label" x="456.1" y="290" text-anchor="middle">250</text>
-      <text class="tick-label" x="534.5" y="290" text-anchor="middle">500</text>
-      <text class="tick-label" x="612.8" y="290" text-anchor="middle">750</text>
-      <text class="tick-label" x="691.2" y="290" text-anchor="middle">1000</text>
-      <text class="tick-label" x="753.9" y="290" text-anchor="middle">1200</text>
-      <line class="axis-line" x1="442.0" y1="272" x2="768.0" y2="272"/>
-      <line class="ref-line" x1="442.0" y1="85.6" x2="768.0" y2="85.6"/>
-      <text class="ref-label" x="768.0" y="79.6" text-anchor="end">Nemotron-120B, untrained (31.7)</text>
-      <path class="connector" marker-end="url(#arw)" d="M 643.5 193.7 Q 561.0 115.8 479.4 133.8"/>
-      <text class="cut-label" x="561.0" y="123.8" text-anchor="middle">3.1&#215; less compute</text>
-      <path class="connector" marker-end="url(#arw)" d="M 734.7 89.1 Q 616.4 39.7 499.1 57.7"/>
-      <text class="cut-label" x="616.4" y="47.7" text-anchor="middle">3.4&#215; less compute</text>
-      <circle class="mark" cx="654.5" cy="199.7" r="6.5" fill="#2a78d6" stroke="#fff" stroke-width="2"/>
-      <text class="pt-label" x="654.5" y="218.7" text-anchor="middle">4B</text>
-      <circle class="hit" cx="654.5" cy="199.7" r="15" data-name="Qwen3.5-4B-GRPO" data-color="#2a78d6" data-val="DSBench 25.7 &#183; 883 GPU-hours"/>
-      <circle class="mark" cx="745.7" cy="95.1" r="6.5" fill="#2a78d6" stroke="#fff" stroke-width="2"/>
-      <text class="pt-label" x="745.7" y="114.1" text-anchor="middle">9B</text>
-      <circle class="hit" cx="745.7" cy="95.1" r="15" data-name="Qwen3.5-9B-GRPO" data-color="#2a78d6" data-val="DSBench 31.2 &#183; 1174 GPU-hours"/>
-      <circle class="mark" cx="462.1" cy="249.2" r="6.5" fill="#1baf7a" stroke="#fff" stroke-width="2"/>
-      <text class="pt-label" x="473.1" y="253.2" text-anchor="start">4B</text>
-      <circle class="hit" cx="462.1" cy="249.2" r="15" data-name="Qwen3.5-4B-WM" data-color="#1baf7a" data-val="DSBench 23.1 &#183; 269 GPU-hours"/>
-      <circle class="mark" cx="481.2" cy="156.0" r="6.5" fill="#1baf7a" stroke="#fff" stroke-width="2"/>
-      <text class="pt-label" x="492.2" y="160.0" text-anchor="start">9B</text>
-      <circle class="hit" cx="481.2" cy="156.0" r="15" data-name="Qwen3.5-9B-WM" data-color="#1baf7a" data-val="DSBench 28.0 &#183; 330 GPU-hours"/>
-      <circle class="mark" cx="467.4" cy="140.8" r="6.5" fill="#eb6834" stroke="#fff" stroke-width="2"/>
-      <text class="pt-label" x="467.4" y="127.8" text-anchor="middle">4B</text>
-      <circle class="hit" cx="467.4" cy="140.8" r="15" data-name="Qwen3.5-4B-Ours" data-color="#eb6834" data-val="DSBench 28.8 &#183; 286 GPU-hours"/>
-      <circle class="mark" cx="487.1" cy="64.7" r="6.5" fill="#eb6834" stroke="#fff" stroke-width="2"/>
-      <text class="pt-label" x="487.1" y="51.7" text-anchor="middle">9B</text>
-      <circle class="hit" cx="487.1" cy="64.7" r="15" data-name="Qwen3.5-9B-Ours" data-color="#eb6834" data-val="DSBench 32.8 &#183; 349 GPU-hours"/>
-      <text class="axis-title" x="390" y="311" text-anchor="middle">Training compute (GPU-hours). Vertical axis is leaderboard percentile.</text>
+      <rect x="48.0" y="52.0" width="326.0" height="66.1" fill="#f2f5f9"/>
+      <text class="panel-title" x="48" y="22">MLE-Dojo (test)</text>
+      <text class="zone-label" x="54" y="40">above Nemotron-120B, the best untrained agent (20.5)</text>
+      <line class="tick-line" x1="48.0" y1="299.2" x2="374.0" y2="299.2"/>
+      <text class="tick-label" x="39.0" y="303.2" text-anchor="end">12</text>
+      <line class="tick-line" x1="48.0" y1="235.3" x2="374.0" y2="235.3"/>
+      <text class="tick-label" x="39.0" y="239.3" text-anchor="end">15</text>
+      <line class="tick-line" x1="48.0" y1="171.3" x2="374.0" y2="171.3"/>
+      <text class="tick-label" x="39.0" y="175.3" text-anchor="end">18</text>
+      <line class="tick-line" x1="48.0" y1="107.4" x2="374.0" y2="107.4"/>
+      <text class="tick-label" x="39.0" y="111.4" text-anchor="end">21</text>
+      <text class="tick-label" x="66.2" y="330" text-anchor="middle">250</text>
+      <text class="tick-label" x="142.0" y="330" text-anchor="middle">500</text>
+      <text class="tick-label" x="217.8" y="330" text-anchor="middle">750</text>
+      <text class="tick-label" x="293.6" y="330" text-anchor="middle">1000</text>
+      <text class="tick-label" x="369.5" y="330" text-anchor="middle">1250</text>
+      <line class="axis-line" x1="48.0" y1="312" x2="374.0" y2="312"/>
+      <line class="ref-line" x1="48.0" y1="118.1" x2="374.0" y2="118.1"/>
+      <path class="lift" marker-end="url(#arwo)" d="M 245.2 239.0 Q 167.6 244.2 92.1 212.4"/>
+      <text class="cut-label" x="149.5" y="258.2" text-anchor="middle">3.1&#215; cheaper<tspan class="cut-gain" dx="7">+1.2 pts</tspan></text>
+      <path class="lift" marker-end="url(#arwo)" d="M 333.4 147.3 Q 221.3 90.5 111.2 89.6"/>
+      <text class="cut-label" x="221.3" y="81.5" text-anchor="middle">3.4&#215; cheaper<tspan class="cut-gain" dx="7">+2.8 pts</tspan></text>
+      <polygon class="mark" points="72.0,273.6 78.4,280.0 72.0,286.4 65.6,280.0" fill="#708db0" stroke="#fff" stroke-width="1.6"/>
+      <circle class="hit" cx="72.0" cy="280.0" r="16" data-name="Qwen3.5-4B-WM" data-color="#708db0" data-val="MLE-Dojo (test) 12.9 &#183; 269 GPU-hours"/>
+      <polygon class="mark" points="90.5,205.4 96.9,211.8 90.5,218.2 84.1,211.8" fill="#708db0" stroke="#fff" stroke-width="1.6"/>
+      <circle class="hit" cx="90.5" cy="211.8" r="16" data-name="Qwen3.5-9B-WM" data-color="#708db0" data-val="MLE-Dojo (test) 16.1 &#183; 330 GPU-hours"/>
+      <circle class="mark" cx="258.2" cy="231.0" r="6.5" fill="#2f5e8c" stroke="#fff" stroke-width="2"/>
+      <text class="pt-label" x="258.2" y="251.0" text-anchor="middle">GRPO 4B</text>
+      <circle class="hit" cx="258.2" cy="231.0" r="16" data-name="Qwen3.5-4B-GRPO" data-color="#2f5e8c" data-val="MLE-Dojo (test) 15.2 &#183; 883 GPU-hours"/>
+      <circle class="mark" cx="346.4" cy="154.3" r="6.5" fill="#2f5e8c" stroke="#fff" stroke-width="2"/>
+      <text class="pt-label" x="346.4" y="174.3" text-anchor="middle">GRPO 9B</text>
+      <circle class="hit" cx="346.4" cy="154.3" r="16" data-name="Qwen3.5-9B-GRPO" data-color="#2f5e8c" data-val="MLE-Dojo (test) 18.8 &#183; 1174 GPU-hours"/>
+      <polygon class="mark" points="77.1,194.9 79.8,201.7 87.1,202.2 81.5,206.9 83.3,213.9 77.1,210.1 70.9,213.9 72.7,206.9 67.1,202.2 74.4,201.7" fill="#e8580a" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+      <text class="pt-label pt-ours" x="77.1" y="189.4" text-anchor="middle">WMRL 4B</text>
+      <circle class="hit" cx="77.1" cy="205.4" r="16" data-name="Qwen3.5-4B-Ours" data-color="#e8580a" data-val="MLE-Dojo (test) 16.4 &#183; 286 GPU-hours"/>
+      <polygon class="mark" points="96.2,84.1 98.9,90.9 106.2,91.4 100.6,96.1 102.4,103.1 96.2,99.2 90.0,103.1 91.8,96.1 86.2,91.4 93.5,90.9" fill="#e8580a" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+      <text class="pt-label pt-ours" x="96.2" y="78.6" text-anchor="middle">WMRL 9B</text>
+      <circle class="hit" cx="96.2" cy="94.6" r="16" data-name="Qwen3.5-9B-Ours" data-color="#e8580a" data-val="MLE-Dojo (test) 21.6 &#183; 349 GPU-hours"/>
+      <rect x="438.0" y="52.0" width="326.0" height="63.0" fill="#f2f5f9"/>
+      <text class="panel-title" x="438" y="22">DSBench</text>
+      <text class="zone-label" x="444" y="40">above Nemotron-120B, the best untrained agent (31.7)</text>
+      <line class="tick-line" x1="438.0" y1="306.1" x2="764.0" y2="306.1"/>
+      <text class="tick-label" x="429.0" y="310.1" text-anchor="end">22</text>
+      <line class="tick-line" x1="438.0" y1="227.3" x2="764.0" y2="227.3"/>
+      <text class="tick-label" x="429.0" y="231.3" text-anchor="end">26</text>
+      <line class="tick-line" x1="438.0" y1="148.5" x2="764.0" y2="148.5"/>
+      <text class="tick-label" x="429.0" y="152.5" text-anchor="end">30</text>
+      <line class="tick-line" x1="438.0" y1="69.7" x2="764.0" y2="69.7"/>
+      <text class="tick-label" x="429.0" y="73.7" text-anchor="end">34</text>
+      <text class="tick-label" x="456.2" y="330" text-anchor="middle">250</text>
+      <text class="tick-label" x="532.0" y="330" text-anchor="middle">500</text>
+      <text class="tick-label" x="607.8" y="330" text-anchor="middle">750</text>
+      <text class="tick-label" x="683.6" y="330" text-anchor="middle">1000</text>
+      <text class="tick-label" x="759.5" y="330" text-anchor="middle">1250</text>
+      <line class="axis-line" x1="438.0" y1="312" x2="764.0" y2="312"/>
+      <line class="ref-line" x1="438.0" y1="115.0" x2="764.0" y2="115.0"/>
+      <path class="lift" marker-end="url(#arwo)" d="M 635.2 241.2 Q 557.6 228.7 482.1 179.2"/>
+      <text class="cut-label" x="539.5" y="242.7" text-anchor="middle">3.1&#215; cheaper<tspan class="cut-gain" dx="7">+3.1 pts</tspan></text>
+      <path class="lift" marker-end="url(#arwo)" d="M 723.4 117.9 Q 611.3 75.1 501.2 88.4"/>
+      <text class="cut-label" x="611.3" y="66.1" text-anchor="middle">3.4&#215; cheaper<tspan class="cut-gain" dx="7">+1.6 pts</tspan></text>
+      <polygon class="mark" points="462.0,278.0 468.4,284.4 462.0,290.8 455.6,284.4" fill="#708db0" stroke="#fff" stroke-width="1.6"/>
+      <circle class="hit" cx="462.0" cy="284.4" r="16" data-name="Qwen3.5-4B-WM" data-color="#708db0" data-val="DSBench 23.1 &#183; 269 GPU-hours"/>
+      <polygon class="mark" points="480.5,181.5 486.9,187.9 480.5,194.3 474.1,187.9" fill="#708db0" stroke="#fff" stroke-width="1.6"/>
+      <circle class="hit" cx="480.5" cy="187.9" r="16" data-name="Qwen3.5-9B-WM" data-color="#708db0" data-val="DSBench 28.0 &#183; 330 GPU-hours"/>
+      <circle class="mark" cx="648.2" cy="233.2" r="6.5" fill="#2f5e8c" stroke="#fff" stroke-width="2"/>
+      <text class="pt-label" x="648.2" y="253.2" text-anchor="middle">GRPO 4B</text>
+      <circle class="hit" cx="648.2" cy="233.2" r="16" data-name="Qwen3.5-4B-GRPO" data-color="#2f5e8c" data-val="DSBench 25.7 &#183; 883 GPU-hours"/>
+      <circle class="mark" cx="736.4" cy="124.9" r="6.5" fill="#2f5e8c" stroke="#fff" stroke-width="2"/>
+      <text class="pt-label" x="736.4" y="144.9" text-anchor="middle">GRPO 9B</text>
+      <circle class="hit" cx="736.4" cy="124.9" r="16" data-name="Qwen3.5-9B-GRPO" data-color="#2f5e8c" data-val="DSBench 31.2 &#183; 1174 GPU-hours"/>
+      <polygon class="mark" points="467.1,161.7 469.8,168.4 477.1,168.9 471.5,173.6 473.3,180.6 467.1,176.8 460.9,180.6 462.7,173.6 457.1,168.9 464.4,168.4" fill="#e8580a" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+      <text class="pt-label pt-ours" x="467.1" y="156.2" text-anchor="middle">WMRL 4B</text>
+      <circle class="hit" cx="467.1" cy="172.2" r="16" data-name="Qwen3.5-4B-Ours" data-color="#e8580a" data-val="DSBench 28.8 &#183; 286 GPU-hours"/>
+      <polygon class="mark" points="486.2,82.9 488.9,89.6 496.2,90.1 490.6,94.8 492.4,101.9 486.2,98.0 480.0,101.9 481.8,94.8 476.2,90.1 483.5,89.6" fill="#e8580a" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+      <text class="pt-label pt-ours" x="486.2" y="77.4" text-anchor="middle">WMRL 9B</text>
+      <circle class="hit" cx="486.2" cy="93.4" r="16" data-name="Qwen3.5-9B-Ours" data-color="#e8580a" data-val="DSBench 32.8 &#183; 349 GPU-hours"/>
+      <text class="axis-title" x="390" y="359" text-anchor="middle">Training compute (GPU-hours) &#8594;&#160;&#160;&#183;&#160;&#160;up and to the left is better</text>
   </svg></div>
   <figcaption>Every trained point shares the data split, the scaffold, and the hyperparameters, so the horizontal distance is the price of the reward signal and nothing else. The rule in each panel is the strongest off-the-shelf agent in the comparison, 13 times larger than our 9B agent and post-trained on nothing.</figcaption>
 </figure>
@@ -287,7 +294,7 @@
     <p class="chart-title">Held-out benchmarks, by agent scale</p>
     <p class="chart-sub">The world model alone gives back most of the gain. Adding the two corrections carries WMRL past the real-environment run on both benchmarks and both scales.</p>
   </div>
-  <div class="legend"><span><i style="background:#a8afba"></i>Untrained base</span><span><i style="background:#2a78d6"></i>RL in real environment (GRPO)</span><span><i style="background:#1baf7a"></i>RL with pure world model</span><span><i style="background:#eb6834"></i>WMRL (ours)</span></div>
+  <div class="legend"><span><i style="background:#b3c0d0"></i>Untrained base</span><span><i style="background:#2f5e8c"></i>RL in real environment (GRPO)</span><span><i style="background:#708db0"></i>RL with pure world model</span><span><i style="background:#e8580a"></i>WMRL (ours)</span></div>
   <div class="plotwrap"><svg class="plot" viewBox="0 0 780 330" role="img" aria-label="DSBench is disjoint from the training set, and the MLE-Dojo test split holds out tasks never trained on. Bars start at zero.">
     
       <text class="panel-title" x="40" y="23">MLE-Dojo (test)</text>
@@ -300,31 +307,31 @@
       <line class="tick-line" x1="40.0" y1="73.4" x2="377.0" y2="73.4"/>
       <text class="tick-label" x="32.0" y="77.4" text-anchor="end">30</text>
       <line class="axis-line" x1="40.0" y1="286" x2="377.0" y2="286"/>
-      <path class="mark" d="M 79.2 286.0 L 79.2 238.3 Q 79.2 234.3 83.2 234.3 L 96.2 234.3 Q 100.2 234.3 100.2 238.3 L 100.2 286.0 Z" fill="#a8afba"/>
+      <path class="mark" d="M 79.2 286.0 L 79.2 238.3 Q 79.2 234.3 83.2 234.3 L 96.2 234.3 Q 100.2 234.3 100.2 238.3 L 100.2 286.0 Z" fill="#b3c0d0"/>
       <text class="val-label" x="89.8" y="228.3" text-anchor="middle">7.3</text>
-      <rect class="hit" x="79.2" y="38" width="21" height="248.0" data-name="Qwen3.5-4B" data-color="#a8afba" data-val="MLE-Dojo (test) 7.3 percentile"/>
-      <path class="mark" d="M 102.2 286.0 L 102.2 182.3 Q 102.2 178.3 106.2 178.3 L 119.2 178.3 Q 123.2 178.3 123.2 182.3 L 123.2 286.0 Z" fill="#2a78d6"/>
+      <rect class="hit" x="79.2" y="38" width="21" height="248.0" data-name="Qwen3.5-4B" data-color="#b3c0d0" data-val="MLE-Dojo (test) 7.3 percentile"/>
+      <path class="mark" d="M 102.2 286.0 L 102.2 182.3 Q 102.2 178.3 106.2 178.3 L 119.2 178.3 Q 123.2 178.3 123.2 182.3 L 123.2 286.0 Z" fill="#2f5e8c"/>
       <text class="val-label" x="112.8" y="172.3" text-anchor="middle">15.2</text>
-      <rect class="hit" x="102.2" y="38" width="21" height="248.0" data-name="Qwen3.5-4B-GRPO" data-color="#2a78d6" data-val="MLE-Dojo (test) 15.2 percentile"/>
-      <path class="mark" d="M 125.2 286.0 L 125.2 198.6 Q 125.2 194.6 129.2 194.6 L 142.2 194.6 Q 146.2 194.6 146.2 198.6 L 146.2 286.0 Z" fill="#1baf7a"/>
+      <rect class="hit" x="102.2" y="38" width="21" height="248.0" data-name="Qwen3.5-4B-GRPO" data-color="#2f5e8c" data-val="MLE-Dojo (test) 15.2 percentile"/>
+      <path class="mark" d="M 125.2 286.0 L 125.2 198.6 Q 125.2 194.6 129.2 194.6 L 142.2 194.6 Q 146.2 194.6 146.2 198.6 L 146.2 286.0 Z" fill="#708db0"/>
       <text class="val-label" x="135.8" y="188.6" text-anchor="middle">12.9</text>
-      <rect class="hit" x="125.2" y="38" width="21" height="248.0" data-name="Qwen3.5-4B-WM" data-color="#1baf7a" data-val="MLE-Dojo (test) 12.9 percentile"/>
-      <path class="mark" d="M 148.2 286.0 L 148.2 173.8 Q 148.2 169.8 152.2 169.8 L 165.2 169.8 Q 169.2 169.8 169.2 173.8 L 169.2 286.0 Z" fill="#eb6834"/>
+      <rect class="hit" x="125.2" y="38" width="21" height="248.0" data-name="Qwen3.5-4B-WM" data-color="#708db0" data-val="MLE-Dojo (test) 12.9 percentile"/>
+      <path class="mark" d="M 148.2 286.0 L 148.2 173.8 Q 148.2 169.8 152.2 169.8 L 165.2 169.8 Q 169.2 169.8 169.2 173.8 L 169.2 286.0 Z" fill="#e8580a"/>
       <text class="val-label hi" x="158.8" y="163.8" text-anchor="middle">16.4</text>
-      <rect class="hit" x="148.2" y="38" width="21" height="248.0" data-name="Qwen3.5-4B-Ours" data-color="#eb6834" data-val="MLE-Dojo (test) 16.4 percentile"/>
+      <rect class="hit" x="148.2" y="38" width="21" height="248.0" data-name="Qwen3.5-4B-Ours" data-color="#e8580a" data-val="MLE-Dojo (test) 16.4 percentile"/>
       <text class="group-label" x="124.2" y="305" text-anchor="middle">4B agent</text>
-      <path class="mark" d="M 247.8 286.0 L 247.8 222.0 Q 247.8 218.0 251.8 218.0 L 264.8 218.0 Q 268.8 218.0 268.8 222.0 L 268.8 286.0 Z" fill="#a8afba"/>
+      <path class="mark" d="M 247.8 286.0 L 247.8 222.0 Q 247.8 218.0 251.8 218.0 L 264.8 218.0 Q 268.8 218.0 268.8 222.0 L 268.8 286.0 Z" fill="#b3c0d0"/>
       <text class="val-label" x="258.2" y="212.0" text-anchor="middle">9.6</text>
-      <rect class="hit" x="247.8" y="38" width="21" height="248.0" data-name="Qwen3.5-9B" data-color="#a8afba" data-val="MLE-Dojo (test) 9.6 percentile"/>
-      <path class="mark" d="M 270.8 286.0 L 270.8 156.8 Q 270.8 152.8 274.8 152.8 L 287.8 152.8 Q 291.8 152.8 291.8 156.8 L 291.8 286.0 Z" fill="#2a78d6"/>
+      <rect class="hit" x="247.8" y="38" width="21" height="248.0" data-name="Qwen3.5-9B" data-color="#b3c0d0" data-val="MLE-Dojo (test) 9.6 percentile"/>
+      <path class="mark" d="M 270.8 286.0 L 270.8 156.8 Q 270.8 152.8 274.8 152.8 L 287.8 152.8 Q 291.8 152.8 291.8 156.8 L 291.8 286.0 Z" fill="#2f5e8c"/>
       <text class="val-label" x="281.2" y="146.8" text-anchor="middle">18.8</text>
-      <rect class="hit" x="270.8" y="38" width="21" height="248.0" data-name="Qwen3.5-9B-GRPO" data-color="#2a78d6" data-val="MLE-Dojo (test) 18.8 percentile"/>
-      <path class="mark" d="M 293.8 286.0 L 293.8 175.9 Q 293.8 171.9 297.8 171.9 L 310.8 171.9 Q 314.8 171.9 314.8 175.9 L 314.8 286.0 Z" fill="#1baf7a"/>
+      <rect class="hit" x="270.8" y="38" width="21" height="248.0" data-name="Qwen3.5-9B-GRPO" data-color="#2f5e8c" data-val="MLE-Dojo (test) 18.8 percentile"/>
+      <path class="mark" d="M 293.8 286.0 L 293.8 175.9 Q 293.8 171.9 297.8 171.9 L 310.8 171.9 Q 314.8 171.9 314.8 175.9 L 314.8 286.0 Z" fill="#708db0"/>
       <text class="val-label" x="304.2" y="165.9" text-anchor="middle">16.1</text>
-      <rect class="hit" x="293.8" y="38" width="21" height="248.0" data-name="Qwen3.5-9B-WM" data-color="#1baf7a" data-val="MLE-Dojo (test) 16.1 percentile"/>
-      <path class="mark" d="M 316.8 286.0 L 316.8 136.9 Q 316.8 132.9 320.8 132.9 L 333.8 132.9 Q 337.8 132.9 337.8 136.9 L 337.8 286.0 Z" fill="#eb6834"/>
+      <rect class="hit" x="293.8" y="38" width="21" height="248.0" data-name="Qwen3.5-9B-WM" data-color="#708db0" data-val="MLE-Dojo (test) 16.1 percentile"/>
+      <path class="mark" d="M 316.8 286.0 L 316.8 136.9 Q 316.8 132.9 320.8 132.9 L 333.8 132.9 Q 337.8 132.9 337.8 136.9 L 337.8 286.0 Z" fill="#e8580a"/>
       <text class="val-label hi" x="327.2" y="126.9" text-anchor="middle">21.6</text>
-      <rect class="hit" x="316.8" y="38" width="21" height="248.0" data-name="Qwen3.5-9B-Ours" data-color="#eb6834" data-val="MLE-Dojo (test) 21.6 percentile"/>
+      <rect class="hit" x="316.8" y="38" width="21" height="248.0" data-name="Qwen3.5-9B-Ours" data-color="#e8580a" data-val="MLE-Dojo (test) 21.6 percentile"/>
       <text class="group-label" x="292.8" y="305" text-anchor="middle">9B agent</text>
       <text class="panel-title" x="433" y="23">DSBench</text>
       <line class="tick-line" x1="433.0" y1="286.0" x2="770.0" y2="286.0"/>
@@ -336,31 +343,31 @@
       <line class="tick-line" x1="433.0" y1="73.4" x2="770.0" y2="73.4"/>
       <text class="tick-label" x="425.0" y="77.4" text-anchor="end">30</text>
       <line class="axis-line" x1="433.0" y1="286" x2="770.0" y2="286"/>
-      <path class="mark" d="M 472.2 286.0 L 472.2 168.8 Q 472.2 164.8 476.2 164.8 L 489.2 164.8 Q 493.2 164.8 493.2 168.8 L 493.2 286.0 Z" fill="#a8afba"/>
+      <path class="mark" d="M 472.2 286.0 L 472.2 168.8 Q 472.2 164.8 476.2 164.8 L 489.2 164.8 Q 493.2 164.8 493.2 168.8 L 493.2 286.0 Z" fill="#b3c0d0"/>
       <text class="val-label" x="482.8" y="158.8" text-anchor="middle">17.1</text>
-      <rect class="hit" x="472.2" y="38" width="21" height="248.0" data-name="Qwen3.5-4B" data-color="#a8afba" data-val="DSBench 17.1 percentile"/>
-      <path class="mark" d="M 495.2 286.0 L 495.2 107.9 Q 495.2 103.9 499.2 103.9 L 512.2 103.9 Q 516.2 103.9 516.2 107.9 L 516.2 286.0 Z" fill="#2a78d6"/>
+      <rect class="hit" x="472.2" y="38" width="21" height="248.0" data-name="Qwen3.5-4B" data-color="#b3c0d0" data-val="DSBench 17.1 percentile"/>
+      <path class="mark" d="M 495.2 286.0 L 495.2 107.9 Q 495.2 103.9 499.2 103.9 L 512.2 103.9 Q 516.2 103.9 516.2 107.9 L 516.2 286.0 Z" fill="#2f5e8c"/>
       <text class="val-label" x="505.8" y="97.9" text-anchor="middle">25.7</text>
-      <rect class="hit" x="495.2" y="38" width="21" height="248.0" data-name="Qwen3.5-4B-GRPO" data-color="#2a78d6" data-val="DSBench 25.7 percentile"/>
-      <path class="mark" d="M 518.2 286.0 L 518.2 126.3 Q 518.2 122.3 522.2 122.3 L 535.2 122.3 Q 539.2 122.3 539.2 126.3 L 539.2 286.0 Z" fill="#1baf7a"/>
+      <rect class="hit" x="495.2" y="38" width="21" height="248.0" data-name="Qwen3.5-4B-GRPO" data-color="#2f5e8c" data-val="DSBench 25.7 percentile"/>
+      <path class="mark" d="M 518.2 286.0 L 518.2 126.3 Q 518.2 122.3 522.2 122.3 L 535.2 122.3 Q 539.2 122.3 539.2 126.3 L 539.2 286.0 Z" fill="#708db0"/>
       <text class="val-label" x="528.8" y="116.3" text-anchor="middle">23.1</text>
-      <rect class="hit" x="518.2" y="38" width="21" height="248.0" data-name="Qwen3.5-4B-WM" data-color="#1baf7a" data-val="DSBench 23.1 percentile"/>
-      <path class="mark" d="M 541.2 286.0 L 541.2 85.9 Q 541.2 81.9 545.2 81.9 L 558.2 81.9 Q 562.2 81.9 562.2 85.9 L 562.2 286.0 Z" fill="#eb6834"/>
+      <rect class="hit" x="518.2" y="38" width="21" height="248.0" data-name="Qwen3.5-4B-WM" data-color="#708db0" data-val="DSBench 23.1 percentile"/>
+      <path class="mark" d="M 541.2 286.0 L 541.2 85.9 Q 541.2 81.9 545.2 81.9 L 558.2 81.9 Q 562.2 81.9 562.2 85.9 L 562.2 286.0 Z" fill="#e8580a"/>
       <text class="val-label hi" x="551.8" y="75.9" text-anchor="middle">28.8</text>
-      <rect class="hit" x="541.2" y="38" width="21" height="248.0" data-name="Qwen3.5-4B-Ours" data-color="#eb6834" data-val="DSBench 28.8 percentile"/>
+      <rect class="hit" x="541.2" y="38" width="21" height="248.0" data-name="Qwen3.5-4B-Ours" data-color="#e8580a" data-val="DSBench 28.8 percentile"/>
       <text class="group-label" x="517.2" y="305" text-anchor="middle">4B agent</text>
-      <path class="mark" d="M 640.8 286.0 L 640.8 120.7 Q 640.8 116.7 644.8 116.7 L 657.8 116.7 Q 661.8 116.7 661.8 120.7 L 661.8 286.0 Z" fill="#a8afba"/>
+      <path class="mark" d="M 640.8 286.0 L 640.8 120.7 Q 640.8 116.7 644.8 116.7 L 657.8 116.7 Q 661.8 116.7 661.8 120.7 L 661.8 286.0 Z" fill="#b3c0d0"/>
       <text class="val-label" x="651.2" y="110.7" text-anchor="middle">23.9</text>
-      <rect class="hit" x="640.8" y="38" width="21" height="248.0" data-name="Qwen3.5-9B" data-color="#a8afba" data-val="DSBench 23.9 percentile"/>
-      <path class="mark" d="M 663.8 286.0 L 663.8 68.9 Q 663.8 64.9 667.8 64.9 L 680.8 64.9 Q 684.8 64.9 684.8 68.9 L 684.8 286.0 Z" fill="#2a78d6"/>
+      <rect class="hit" x="640.8" y="38" width="21" height="248.0" data-name="Qwen3.5-9B" data-color="#b3c0d0" data-val="DSBench 23.9 percentile"/>
+      <path class="mark" d="M 663.8 286.0 L 663.8 68.9 Q 663.8 64.9 667.8 64.9 L 680.8 64.9 Q 684.8 64.9 684.8 68.9 L 684.8 286.0 Z" fill="#2f5e8c"/>
       <text class="val-label" x="674.2" y="58.9" text-anchor="middle">31.2</text>
-      <rect class="hit" x="663.8" y="38" width="21" height="248.0" data-name="Qwen3.5-9B-GRPO" data-color="#2a78d6" data-val="DSBench 31.2 percentile"/>
-      <path class="mark" d="M 686.8 286.0 L 686.8 91.6 Q 686.8 87.6 690.8 87.6 L 703.8 87.6 Q 707.8 87.6 707.8 91.6 L 707.8 286.0 Z" fill="#1baf7a"/>
+      <rect class="hit" x="663.8" y="38" width="21" height="248.0" data-name="Qwen3.5-9B-GRPO" data-color="#2f5e8c" data-val="DSBench 31.2 percentile"/>
+      <path class="mark" d="M 686.8 286.0 L 686.8 91.6 Q 686.8 87.6 690.8 87.6 L 703.8 87.6 Q 707.8 87.6 707.8 91.6 L 707.8 286.0 Z" fill="#708db0"/>
       <text class="val-label" x="697.2" y="81.6" text-anchor="middle">28.0</text>
-      <rect class="hit" x="686.8" y="38" width="21" height="248.0" data-name="Qwen3.5-9B-WM" data-color="#1baf7a" data-val="DSBench 28.0 percentile"/>
-      <path class="mark" d="M 709.8 286.0 L 709.8 57.6 Q 709.8 53.6 713.8 53.6 L 726.8 53.6 Q 730.8 53.6 730.8 57.6 L 730.8 286.0 Z" fill="#eb6834"/>
+      <rect class="hit" x="686.8" y="38" width="21" height="248.0" data-name="Qwen3.5-9B-WM" data-color="#708db0" data-val="DSBench 28.0 percentile"/>
+      <path class="mark" d="M 709.8 286.0 L 709.8 57.6 Q 709.8 53.6 713.8 53.6 L 726.8 53.6 Q 730.8 53.6 730.8 57.6 L 730.8 286.0 Z" fill="#e8580a"/>
       <text class="val-label hi" x="720.2" y="47.6" text-anchor="middle">32.8</text>
-      <rect class="hit" x="709.8" y="38" width="21" height="248.0" data-name="Qwen3.5-9B-Ours" data-color="#eb6834" data-val="DSBench 32.8 percentile"/>
+      <rect class="hit" x="709.8" y="38" width="21" height="248.0" data-name="Qwen3.5-9B-Ours" data-color="#e8580a" data-val="DSBench 32.8 percentile"/>
       <text class="group-label" x="685.8" y="305" text-anchor="middle">9B agent</text>
       <text class="axis-title" transform="translate(11,162) rotate(-90)" text-anchor="middle">Leaderboard percentile</text>
   </svg></div>
@@ -472,7 +479,7 @@
     <p class="chart-title">Both corrections earn their place</p>
     <p class="chart-sub">Every run here consumes the same two reward streams at the same ratio and differs only in which correction is switched on. The leftmost bar of each group is the uncorrected mixture.</p>
   </div>
-  <div class="legend"><span><i style="background:#bcc4cf"></i>No correction</span><span><i style="background:#98a3b2"></i>Inverse-Variance Denoising only</span><span><i style="background:#717e92"></i>Online Debiasing only</span><span><i style="background:#eb6834"></i>Both (WMRL)</span></div>
+  <div class="legend"><span><i style="background:#a5b5c8"></i>No correction</span><span><i style="background:#6d8bab"></i>Inverse-Variance Denoising only</span><span><i style="background:#35598a"></i>Online Debiasing only</span><span><i style="background:#e8580a"></i>Both (WMRL)</span></div>
   <div class="plotwrap"><svg class="plot" viewBox="0 0 780 262" role="img" aria-label="Denoising alone adds 0.9 to 1.7 points and debiasing alone adds 2.2 to 2.8, which matches the analysis: bias enters the bound at full size while noise enters damped by the step size. Together they add 2.9 to 4.8, more than either alone, so the two mechanisms are complementary rather than redundant.">
     
       <text class="panel-title" x="40" y="20">MLE-Dojo (test)</text>
@@ -485,27 +492,27 @@
       <line class="tick-line" x1="40.0" y1="60.6" x2="377.0" y2="60.6"/>
       <text class="tick-label" x="32.0" y="64.6" text-anchor="end">30</text>
       <line class="axis-line" x1="40.0" y1="220" x2="377.0" y2="220"/>
-      <path class="mark" d="M 83.2 220.0 L 83.2 152.3 Q 83.2 148.3 87.2 148.3 L 98.2 148.3 Q 102.2 148.3 102.2 152.3 L 102.2 220.0 Z" fill="#bcc4cf"/>
+      <path class="mark" d="M 83.2 220.0 L 83.2 152.3 Q 83.2 148.3 87.2 148.3 L 98.2 148.3 Q 102.2 148.3 102.2 152.3 L 102.2 220.0 Z" fill="#a5b5c8"/>
       <text class="val-label" x="92.8" y="142.3" text-anchor="middle">13.5</text>
-      <rect class="hit" x="83.2" y="34" width="19" height="186.0" data-name="4B agent &amp;#183; No correction" data-color="#bcc4cf" data-val="MLE-Dojo (test) 13.5 percentile"/>
-      <path class="mark" d="M 104.2 220.0 L 104.2 144.8 Q 104.2 140.8 108.2 140.8 L 119.2 140.8 Q 123.2 140.8 123.2 144.8 L 123.2 220.0 Z" fill="#98a3b2"/>
-      <rect class="hit" x="104.2" y="34" width="19" height="186.0" data-name="4B agent &amp;#183; Inverse-Variance Denoising only" data-color="#98a3b2" data-val="MLE-Dojo (test) 14.9 percentile"/>
-      <path class="mark" d="M 125.2 220.0 L 125.2 140.6 Q 125.2 136.6 129.2 136.6 L 140.2 136.6 Q 144.2 136.6 144.2 140.6 L 144.2 220.0 Z" fill="#717e92"/>
-      <rect class="hit" x="125.2" y="34" width="19" height="186.0" data-name="4B agent &amp;#183; Online Debiasing only" data-color="#717e92" data-val="MLE-Dojo (test) 15.7 percentile"/>
-      <path class="mark" d="M 146.2 220.0 L 146.2 136.8 Q 146.2 132.8 150.2 132.8 L 161.2 132.8 Q 165.2 132.8 165.2 136.8 L 165.2 220.0 Z" fill="#eb6834"/>
+      <rect class="hit" x="83.2" y="34" width="19" height="186.0" data-name="4B agent &amp;#183; No correction" data-color="#a5b5c8" data-val="MLE-Dojo (test) 13.5 percentile"/>
+      <path class="mark" d="M 104.2 220.0 L 104.2 144.8 Q 104.2 140.8 108.2 140.8 L 119.2 140.8 Q 123.2 140.8 123.2 144.8 L 123.2 220.0 Z" fill="#6d8bab"/>
+      <rect class="hit" x="104.2" y="34" width="19" height="186.0" data-name="4B agent &amp;#183; Inverse-Variance Denoising only" data-color="#6d8bab" data-val="MLE-Dojo (test) 14.9 percentile"/>
+      <path class="mark" d="M 125.2 220.0 L 125.2 140.6 Q 125.2 136.6 129.2 136.6 L 140.2 136.6 Q 144.2 136.6 144.2 140.6 L 144.2 220.0 Z" fill="#35598a"/>
+      <rect class="hit" x="125.2" y="34" width="19" height="186.0" data-name="4B agent &amp;#183; Online Debiasing only" data-color="#35598a" data-val="MLE-Dojo (test) 15.7 percentile"/>
+      <path class="mark" d="M 146.2 220.0 L 146.2 136.8 Q 146.2 132.8 150.2 132.8 L 161.2 132.8 Q 165.2 132.8 165.2 136.8 L 165.2 220.0 Z" fill="#e8580a"/>
       <text class="val-label hi" x="155.8" y="126.8" text-anchor="middle">16.4</text>
-      <rect class="hit" x="146.2" y="34" width="19" height="186.0" data-name="4B agent &amp;#183; Both (WMRL)" data-color="#eb6834" data-val="MLE-Dojo (test) 16.4 percentile"/>
+      <rect class="hit" x="146.2" y="34" width="19" height="186.0" data-name="4B agent &amp;#183; Both (WMRL)" data-color="#e8580a" data-val="MLE-Dojo (test) 16.4 percentile"/>
       <text class="group-label" x="124.2" y="239" text-anchor="middle">4B agent</text>
-      <path class="mark" d="M 251.8 220.0 L 251.8 134.7 Q 251.8 130.7 255.8 130.7 L 266.8 130.7 Q 270.8 130.7 270.8 134.7 L 270.8 220.0 Z" fill="#bcc4cf"/>
+      <path class="mark" d="M 251.8 220.0 L 251.8 134.7 Q 251.8 130.7 255.8 130.7 L 266.8 130.7 Q 270.8 130.7 270.8 134.7 L 270.8 220.0 Z" fill="#a5b5c8"/>
       <text class="val-label" x="261.2" y="124.7" text-anchor="middle">16.8</text>
-      <rect class="hit" x="251.8" y="34" width="19" height="186.0" data-name="9B agent &amp;#183; No correction" data-color="#bcc4cf" data-val="MLE-Dojo (test) 16.8 percentile"/>
-      <path class="mark" d="M 272.8 220.0 L 272.8 128.3 Q 272.8 124.3 276.8 124.3 L 287.8 124.3 Q 291.8 124.3 291.8 128.3 L 291.8 220.0 Z" fill="#98a3b2"/>
-      <rect class="hit" x="272.8" y="34" width="19" height="186.0" data-name="9B agent &amp;#183; Inverse-Variance Denoising only" data-color="#98a3b2" data-val="MLE-Dojo (test) 18.0 percentile"/>
-      <path class="mark" d="M 293.8 220.0 L 293.8 120.9 Q 293.8 116.9 297.8 116.9 L 308.8 116.9 Q 312.8 116.9 312.8 120.9 L 312.8 220.0 Z" fill="#717e92"/>
-      <rect class="hit" x="293.8" y="34" width="19" height="186.0" data-name="9B agent &amp;#183; Online Debiasing only" data-color="#717e92" data-val="MLE-Dojo (test) 19.4 percentile"/>
-      <path class="mark" d="M 314.8 220.0 L 314.8 109.2 Q 314.8 105.2 318.8 105.2 L 329.8 105.2 Q 333.8 105.2 333.8 109.2 L 333.8 220.0 Z" fill="#eb6834"/>
+      <rect class="hit" x="251.8" y="34" width="19" height="186.0" data-name="9B agent &amp;#183; No correction" data-color="#a5b5c8" data-val="MLE-Dojo (test) 16.8 percentile"/>
+      <path class="mark" d="M 272.8 220.0 L 272.8 128.3 Q 272.8 124.3 276.8 124.3 L 287.8 124.3 Q 291.8 124.3 291.8 128.3 L 291.8 220.0 Z" fill="#6d8bab"/>
+      <rect class="hit" x="272.8" y="34" width="19" height="186.0" data-name="9B agent &amp;#183; Inverse-Variance Denoising only" data-color="#6d8bab" data-val="MLE-Dojo (test) 18.0 percentile"/>
+      <path class="mark" d="M 293.8 220.0 L 293.8 120.9 Q 293.8 116.9 297.8 116.9 L 308.8 116.9 Q 312.8 116.9 312.8 120.9 L 312.8 220.0 Z" fill="#35598a"/>
+      <rect class="hit" x="293.8" y="34" width="19" height="186.0" data-name="9B agent &amp;#183; Online Debiasing only" data-color="#35598a" data-val="MLE-Dojo (test) 19.4 percentile"/>
+      <path class="mark" d="M 314.8 220.0 L 314.8 109.2 Q 314.8 105.2 318.8 105.2 L 329.8 105.2 Q 333.8 105.2 333.8 109.2 L 333.8 220.0 Z" fill="#e8580a"/>
       <text class="val-label hi" x="324.2" y="99.2" text-anchor="middle">21.6</text>
-      <rect class="hit" x="314.8" y="34" width="19" height="186.0" data-name="9B agent &amp;#183; Both (WMRL)" data-color="#eb6834" data-val="MLE-Dojo (test) 21.6 percentile"/>
+      <rect class="hit" x="314.8" y="34" width="19" height="186.0" data-name="9B agent &amp;#183; Both (WMRL)" data-color="#e8580a" data-val="MLE-Dojo (test) 21.6 percentile"/>
       <text class="group-label" x="292.8" y="239" text-anchor="middle">9B agent</text>
       <text class="panel-title" x="433" y="20">DSBench</text>
       <line class="tick-line" x1="433.0" y1="220.0" x2="770.0" y2="220.0"/>
@@ -517,27 +524,27 @@
       <line class="tick-line" x1="433.0" y1="60.6" x2="770.0" y2="60.6"/>
       <text class="tick-label" x="425.0" y="64.6" text-anchor="end">30</text>
       <line class="axis-line" x1="433.0" y1="220" x2="770.0" y2="220"/>
-      <path class="mark" d="M 476.2 220.0 L 476.2 89.5 Q 476.2 85.5 480.2 85.5 L 491.2 85.5 Q 495.2 85.5 495.2 89.5 L 495.2 220.0 Z" fill="#bcc4cf"/>
+      <path class="mark" d="M 476.2 220.0 L 476.2 89.5 Q 476.2 85.5 480.2 85.5 L 491.2 85.5 Q 495.2 85.5 495.2 89.5 L 495.2 220.0 Z" fill="#a5b5c8"/>
       <text class="val-label" x="485.8" y="79.5" text-anchor="middle">25.3</text>
-      <rect class="hit" x="476.2" y="34" width="19" height="186.0" data-name="4B agent &amp;#183; No correction" data-color="#bcc4cf" data-val="DSBench 25.3 percentile"/>
-      <path class="mark" d="M 497.2 220.0 L 497.2 84.8 Q 497.2 80.8 501.2 80.8 L 512.2 80.8 Q 516.2 80.8 516.2 84.8 L 516.2 220.0 Z" fill="#98a3b2"/>
-      <rect class="hit" x="497.2" y="34" width="19" height="186.0" data-name="4B agent &amp;#183; Inverse-Variance Denoising only" data-color="#98a3b2" data-val="DSBench 26.2 percentile"/>
-      <path class="mark" d="M 518.2 220.0 L 518.2 74.7 Q 518.2 70.7 522.2 70.7 L 533.2 70.7 Q 537.2 70.7 537.2 74.7 L 537.2 220.0 Z" fill="#717e92"/>
-      <rect class="hit" x="518.2" y="34" width="19" height="186.0" data-name="4B agent &amp;#183; Online Debiasing only" data-color="#717e92" data-val="DSBench 28.1 percentile"/>
-      <path class="mark" d="M 539.2 220.0 L 539.2 70.9 Q 539.2 66.9 543.2 66.9 L 554.2 66.9 Q 558.2 66.9 558.2 70.9 L 558.2 220.0 Z" fill="#eb6834"/>
+      <rect class="hit" x="476.2" y="34" width="19" height="186.0" data-name="4B agent &amp;#183; No correction" data-color="#a5b5c8" data-val="DSBench 25.3 percentile"/>
+      <path class="mark" d="M 497.2 220.0 L 497.2 84.8 Q 497.2 80.8 501.2 80.8 L 512.2 80.8 Q 516.2 80.8 516.2 84.8 L 516.2 220.0 Z" fill="#6d8bab"/>
+      <rect class="hit" x="497.2" y="34" width="19" height="186.0" data-name="4B agent &amp;#183; Inverse-Variance Denoising only" data-color="#6d8bab" data-val="DSBench 26.2 percentile"/>
+      <path class="mark" d="M 518.2 220.0 L 518.2 74.7 Q 518.2 70.7 522.2 70.7 L 533.2 70.7 Q 537.2 70.7 537.2 74.7 L 537.2 220.0 Z" fill="#35598a"/>
+      <rect class="hit" x="518.2" y="34" width="19" height="186.0" data-name="4B agent &amp;#183; Online Debiasing only" data-color="#35598a" data-val="DSBench 28.1 percentile"/>
+      <path class="mark" d="M 539.2 220.0 L 539.2 70.9 Q 539.2 66.9 543.2 66.9 L 554.2 66.9 Q 558.2 66.9 558.2 70.9 L 558.2 220.0 Z" fill="#e8580a"/>
       <text class="val-label hi" x="548.8" y="60.9" text-anchor="middle">28.8</text>
-      <rect class="hit" x="539.2" y="34" width="19" height="186.0" data-name="4B agent &amp;#183; Both (WMRL)" data-color="#eb6834" data-val="DSBench 28.8 percentile"/>
+      <rect class="hit" x="539.2" y="34" width="19" height="186.0" data-name="4B agent &amp;#183; Both (WMRL)" data-color="#e8580a" data-val="DSBench 28.8 percentile"/>
       <text class="group-label" x="517.2" y="239" text-anchor="middle">4B agent</text>
-      <path class="mark" d="M 644.8 220.0 L 644.8 67.2 Q 644.8 63.2 648.8 63.2 L 659.8 63.2 Q 663.8 63.2 663.8 67.2 L 663.8 220.0 Z" fill="#bcc4cf"/>
+      <path class="mark" d="M 644.8 220.0 L 644.8 67.2 Q 644.8 63.2 648.8 63.2 L 659.8 63.2 Q 663.8 63.2 663.8 67.2 L 663.8 220.0 Z" fill="#a5b5c8"/>
       <text class="val-label" x="654.2" y="57.2" text-anchor="middle">29.5</text>
-      <rect class="hit" x="644.8" y="34" width="19" height="186.0" data-name="9B agent &amp;#183; No correction" data-color="#bcc4cf" data-val="DSBench 29.5 percentile"/>
-      <path class="mark" d="M 665.8 220.0 L 665.8 58.2 Q 665.8 54.2 669.8 54.2 L 680.8 54.2 Q 684.8 54.2 684.8 58.2 L 684.8 220.0 Z" fill="#98a3b2"/>
-      <rect class="hit" x="665.8" y="34" width="19" height="186.0" data-name="9B agent &amp;#183; Inverse-Variance Denoising only" data-color="#98a3b2" data-val="DSBench 31.2 percentile"/>
-      <path class="mark" d="M 686.8 220.0 L 686.8 55.5 Q 686.8 51.5 690.8 51.5 L 701.8 51.5 Q 705.8 51.5 705.8 55.5 L 705.8 220.0 Z" fill="#717e92"/>
-      <rect class="hit" x="686.8" y="34" width="19" height="186.0" data-name="9B agent &amp;#183; Online Debiasing only" data-color="#717e92" data-val="DSBench 31.7 percentile"/>
-      <path class="mark" d="M 707.8 220.0 L 707.8 49.7 Q 707.8 45.7 711.8 45.7 L 722.8 45.7 Q 726.8 45.7 726.8 49.7 L 726.8 220.0 Z" fill="#eb6834"/>
+      <rect class="hit" x="644.8" y="34" width="19" height="186.0" data-name="9B agent &amp;#183; No correction" data-color="#a5b5c8" data-val="DSBench 29.5 percentile"/>
+      <path class="mark" d="M 665.8 220.0 L 665.8 58.2 Q 665.8 54.2 669.8 54.2 L 680.8 54.2 Q 684.8 54.2 684.8 58.2 L 684.8 220.0 Z" fill="#6d8bab"/>
+      <rect class="hit" x="665.8" y="34" width="19" height="186.0" data-name="9B agent &amp;#183; Inverse-Variance Denoising only" data-color="#6d8bab" data-val="DSBench 31.2 percentile"/>
+      <path class="mark" d="M 686.8 220.0 L 686.8 55.5 Q 686.8 51.5 690.8 51.5 L 701.8 51.5 Q 705.8 51.5 705.8 55.5 L 705.8 220.0 Z" fill="#35598a"/>
+      <rect class="hit" x="686.8" y="34" width="19" height="186.0" data-name="9B agent &amp;#183; Online Debiasing only" data-color="#35598a" data-val="DSBench 31.7 percentile"/>
+      <path class="mark" d="M 707.8 220.0 L 707.8 49.7 Q 707.8 45.7 711.8 45.7 L 722.8 45.7 Q 726.8 45.7 726.8 49.7 L 726.8 220.0 Z" fill="#e8580a"/>
       <text class="val-label hi" x="717.2" y="39.7" text-anchor="middle">32.8</text>
-      <rect class="hit" x="707.8" y="34" width="19" height="186.0" data-name="9B agent &amp;#183; Both (WMRL)" data-color="#eb6834" data-val="DSBench 32.8 percentile"/>
+      <rect class="hit" x="707.8" y="34" width="19" height="186.0" data-name="9B agent &amp;#183; Both (WMRL)" data-color="#e8580a" data-val="DSBench 32.8 percentile"/>
       <text class="group-label" x="685.8" y="239" text-anchor="middle">9B agent</text>
       <text class="axis-title" transform="translate(11,127) rotate(-90)" text-anchor="middle">Leaderboard percentile</text>
   </svg></div>
@@ -579,7 +586,7 @@
   </div>
 </section>
 
-<section id="embodied">
+<section id="embodied" class="alt">
   <div class="wrap">
     <div class="h2row"><span class="no">04</span><h2>Embodied manipulation</h2></div>
     <p class="lead reveal">
@@ -604,7 +611,7 @@
     <p class="chart-title">Embodied manipulation on LIBERO-Long</p>
     <p class="chart-sub">Each signal on its own barely moves the SFT policy. Combining them under the same two corrections gives the largest gain, and the widest margin is on unseen initial states.</p>
   </div>
-  <div class="legend"><span><i style="background:#a8afba"></i>MiniVLA-1B-SFT</span><span><i style="background:#2a78d6"></i>RL in real environment (GRPO)</span><span><i style="background:#1baf7a"></i>RL with pure world model</span><span><i style="background:#eb6834"></i>WMRL (ours)</span></div>
+  <div class="legend"><span><i style="background:#b3c0d0"></i>MiniVLA-1B-SFT</span><span><i style="background:#2f5e8c"></i>RL in real environment (GRPO)</span><span><i style="background:#708db0"></i>RL with pure world model</span><span><i style="background:#e8580a"></i>WMRL (ours)</span></div>
   <div class="plotwrap"><svg class="plot" viewBox="0 0 780 244" role="img" aria-label="All reinforcement-learning rows start from the same SFT checkpoint, so the spread within a row is attributable to the reward signal alone. The axis starts at 37 to resolve that spread; absolute values including the untrained policy are in the table below.">
     
       <line class="tick-line" x1="150.0" y1="26" x2="150.0" y2="208"/>
@@ -619,40 +626,40 @@
       <text class="tick-label" x="607.4" y="224" text-anchor="middle">41</text>
       <text class="group-label" x="132" y="58" text-anchor="end">In-Domain</text>
       <line class="connector" x1="184.3" y1="54" x2="630.3" y2="54"/>
-      <circle class="mark" cx="184.3" cy="54" r="6.5" fill="#a8afba" stroke="#fff" stroke-width="2"/>
-      <circle class="hit" cx="184.3" cy="54" r="14" data-name="MiniVLA-1B-SFT" data-color="#a8afba" data-val="In-Domain 37.3% success"/>
-      <circle class="mark" cx="413.0" cy="54" r="6.5" fill="#2a78d6" stroke="#fff" stroke-width="2"/>
-      <circle class="hit" cx="413.0" cy="54" r="14" data-name="MiniVLA-1B-GRPO" data-color="#2a78d6" data-val="In-Domain 39.3% success"/>
-      <circle class="mark" cx="390.1" cy="54" r="6.5" fill="#1baf7a" stroke="#fff" stroke-width="2"/>
-      <circle class="hit" cx="390.1" cy="54" r="14" data-name="MiniVLA-1B-WM" data-color="#1baf7a" data-val="In-Domain 39.1% success"/>
-      <circle class="mark" cx="630.3" cy="54" r="6.5" fill="#eb6834" stroke="#fff" stroke-width="2"/>
-      <circle class="hit" cx="630.3" cy="54" r="14" data-name="MiniVLA-1B-Ours" data-color="#eb6834" data-val="In-Domain 41.2% success"/>
+      <circle class="mark" cx="184.3" cy="54" r="6.5" fill="#b3c0d0" stroke="#fff" stroke-width="2"/>
+      <circle class="hit" cx="184.3" cy="54" r="14" data-name="MiniVLA-1B-SFT" data-color="#b3c0d0" data-val="In-Domain 37.3% success"/>
+      <circle class="mark" cx="413.0" cy="54" r="6.5" fill="#2f5e8c" stroke="#fff" stroke-width="2"/>
+      <circle class="hit" cx="413.0" cy="54" r="14" data-name="MiniVLA-1B-GRPO" data-color="#2f5e8c" data-val="In-Domain 39.3% success"/>
+      <circle class="mark" cx="390.1" cy="54" r="6.5" fill="#708db0" stroke="#fff" stroke-width="2"/>
+      <circle class="hit" cx="390.1" cy="54" r="14" data-name="MiniVLA-1B-WM" data-color="#708db0" data-val="In-Domain 39.1% success"/>
+      <circle class="mark" cx="630.3" cy="54" r="6.5" fill="#e8580a" stroke="#fff" stroke-width="2"/>
+      <circle class="hit" cx="630.3" cy="54" r="14" data-name="MiniVLA-1B-Ours" data-color="#e8580a" data-val="In-Domain 41.2% success"/>
       <text class="val-label" x="184.3" y="40" text-anchor="middle">37.3</text>
       <text class="val-label hi" x="630.3" y="40" text-anchor="middle">41.2</text>
       <text class="gain-label" x="692" y="58">&#43;3.9 over SFT</text>
       <text class="group-label" x="132" y="112" text-anchor="end">Out-of-Distribution</text>
       <line class="connector" x1="207.2" y1="108" x2="630.3" y2="108"/>
-      <circle class="mark" cx="207.2" cy="108" r="6.5" fill="#a8afba" stroke="#fff" stroke-width="2"/>
-      <circle class="hit" cx="207.2" cy="108" r="14" data-name="MiniVLA-1B-SFT" data-color="#a8afba" data-val="Out-of-Distribution 37.5% success"/>
-      <circle class="mark" cx="241.5" cy="108" r="6.5" fill="#2a78d6" stroke="#fff" stroke-width="2"/>
-      <circle class="hit" cx="241.5" cy="108" r="14" data-name="MiniVLA-1B-GRPO" data-color="#2a78d6" data-val="Out-of-Distribution 37.8% success"/>
-      <circle class="mark" cx="413.0" cy="108" r="6.5" fill="#1baf7a" stroke="#fff" stroke-width="2"/>
-      <circle class="hit" cx="413.0" cy="108" r="14" data-name="MiniVLA-1B-WM" data-color="#1baf7a" data-val="Out-of-Distribution 39.3% success"/>
-      <circle class="mark" cx="630.3" cy="108" r="6.5" fill="#eb6834" stroke="#fff" stroke-width="2"/>
-      <circle class="hit" cx="630.3" cy="108" r="14" data-name="MiniVLA-1B-Ours" data-color="#eb6834" data-val="Out-of-Distribution 41.2% success"/>
+      <circle class="mark" cx="207.2" cy="108" r="6.5" fill="#b3c0d0" stroke="#fff" stroke-width="2"/>
+      <circle class="hit" cx="207.2" cy="108" r="14" data-name="MiniVLA-1B-SFT" data-color="#b3c0d0" data-val="Out-of-Distribution 37.5% success"/>
+      <circle class="mark" cx="241.5" cy="108" r="6.5" fill="#2f5e8c" stroke="#fff" stroke-width="2"/>
+      <circle class="hit" cx="241.5" cy="108" r="14" data-name="MiniVLA-1B-GRPO" data-color="#2f5e8c" data-val="Out-of-Distribution 37.8% success"/>
+      <circle class="mark" cx="413.0" cy="108" r="6.5" fill="#708db0" stroke="#fff" stroke-width="2"/>
+      <circle class="hit" cx="413.0" cy="108" r="14" data-name="MiniVLA-1B-WM" data-color="#708db0" data-val="Out-of-Distribution 39.3% success"/>
+      <circle class="mark" cx="630.3" cy="108" r="6.5" fill="#e8580a" stroke="#fff" stroke-width="2"/>
+      <circle class="hit" cx="630.3" cy="108" r="14" data-name="MiniVLA-1B-Ours" data-color="#e8580a" data-val="Out-of-Distribution 41.2% success"/>
       <text class="val-label" x="207.2" y="94" text-anchor="middle">37.5</text>
       <text class="val-label hi" x="630.3" y="94" text-anchor="middle">41.2</text>
       <text class="gain-label" x="692" y="112">&#43;3.7 over SFT</text>
       <text class="group-label" x="132" y="166" text-anchor="end">Overall</text>
       <line class="connector" x1="195.7" y1="162" x2="630.3" y2="162"/>
-      <circle class="mark" cx="195.7" cy="162" r="6.5" fill="#a8afba" stroke="#fff" stroke-width="2"/>
-      <circle class="hit" cx="195.7" cy="162" r="14" data-name="MiniVLA-1B-SFT" data-color="#a8afba" data-val="Overall 37.4% success"/>
-      <circle class="mark" cx="298.7" cy="162" r="6.5" fill="#2a78d6" stroke="#fff" stroke-width="2"/>
-      <circle class="hit" cx="298.7" cy="162" r="14" data-name="MiniVLA-1B-GRPO" data-color="#2a78d6" data-val="Overall 38.3% success"/>
-      <circle class="mark" cx="401.6" cy="162" r="6.5" fill="#1baf7a" stroke="#fff" stroke-width="2"/>
-      <circle class="hit" cx="401.6" cy="162" r="14" data-name="MiniVLA-1B-WM" data-color="#1baf7a" data-val="Overall 39.2% success"/>
-      <circle class="mark" cx="630.3" cy="162" r="6.5" fill="#eb6834" stroke="#fff" stroke-width="2"/>
-      <circle class="hit" cx="630.3" cy="162" r="14" data-name="MiniVLA-1B-Ours" data-color="#eb6834" data-val="Overall 41.2% success"/>
+      <circle class="mark" cx="195.7" cy="162" r="6.5" fill="#b3c0d0" stroke="#fff" stroke-width="2"/>
+      <circle class="hit" cx="195.7" cy="162" r="14" data-name="MiniVLA-1B-SFT" data-color="#b3c0d0" data-val="Overall 37.4% success"/>
+      <circle class="mark" cx="298.7" cy="162" r="6.5" fill="#2f5e8c" stroke="#fff" stroke-width="2"/>
+      <circle class="hit" cx="298.7" cy="162" r="14" data-name="MiniVLA-1B-GRPO" data-color="#2f5e8c" data-val="Overall 38.3% success"/>
+      <circle class="mark" cx="401.6" cy="162" r="6.5" fill="#708db0" stroke="#fff" stroke-width="2"/>
+      <circle class="hit" cx="401.6" cy="162" r="14" data-name="MiniVLA-1B-WM" data-color="#708db0" data-val="Overall 39.2% success"/>
+      <circle class="mark" cx="630.3" cy="162" r="6.5" fill="#e8580a" stroke="#fff" stroke-width="2"/>
+      <circle class="hit" cx="630.3" cy="162" r="14" data-name="MiniVLA-1B-Ours" data-color="#e8580a" data-val="Overall 41.2% success"/>
       <text class="val-label" x="195.7" y="148" text-anchor="middle">37.4</text>
       <text class="val-label hi" x="630.3" y="148" text-anchor="middle">41.2</text>
       <text class="gain-label" x="692" y="166">&#43;3.8 over SFT</text>

@@ -58,8 +58,11 @@
         var r = hit.getBoundingClientRect();
         show(hit, r.left + r.width / 2, r.top);
         chart.classList.add('dim');
-        // a hit rect sits right after the mark it belongs to
+        // the hit rect trails the mark it belongs to, sometimes past its label
         var mark = hit.previousElementSibling;
+        for (var i = 0; i < 4 && mark && !mark.classList.contains('mark'); i++) {
+          mark = mark.previousElementSibling;
+        }
         if (mark && mark.classList.contains('mark')) mark.classList.add('on');
         if (ev && ev.cancelable) ev.preventDefault();
       }
