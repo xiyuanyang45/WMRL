@@ -1,0 +1,30 @@
+# The training stack. Separate from requirements.txt because these are large,
+# CUDA-version-sensitive, and the right build depends on your driver and cards.
+# Installing them is the part of setup that depends on your cluster rather than
+# on this code, so read this file before running it.
+#
+# The overlays in ml_research/cluster/verl_patches.py assert their anchor text
+# against this verl revision. A different revision may work; if an anchor no
+# longer matches, the launcher stops and names the file, which is the point.
+#
+#   pip install -r requirements-train.txt
+
+# RL trainer. Pinned by commit: this project patches two files in it.
+verl @ git+https://github.com/volcengine/verl@v0.4.1
+
+# Inference backend, for both rollout generation and the world model servers.
+# Match the build to your CUDA version; the pin below is what these runs used.
+vllm==0.8.5
+
+# Distributed actors, used for the anchor pair transport between rollout
+# workers and the trainer.
+ray[default]>=2.40
+
+torch>=2.6
+transformers>=4.51
+accelerate>=1.4
+datasets>=3.3
+
+# Competition data. Needs credentials in KAGGLE_USERNAME / KAGGLE_KEY.
+kaggle>=1.6
+huggingface_hub>=0.30
