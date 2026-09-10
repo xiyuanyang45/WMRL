@@ -25,6 +25,7 @@
     <span class="links">
       <a href="#overview">Overview</a>
       <a href="#method">Method</a>
+      <a href="#theory">Theory</a>
       <a href="#results">Results</a>
       <a href="#embodied">Embodied</a>
       <a href="#bibtex">BibTeX</a>
@@ -183,9 +184,71 @@
   </div>
 </section>
 
+<section id="theory">
+  <div class="wrap">
+    <div class="h2row"><span class="no">03</span><h2>Theory</h2></div>
+
+    <p class="lead reveal">Neither correction is a heuristic. Each one divides a term of the
+    convergence bound by a factor strictly greater than one &mdash; and the factor on the bias
+    term grows without limit as training proceeds.</p>
+
+    <p class="reveal">Assume the usual regularity: <span class="math">J</span> is smooth and
+    gradient-dominated, and the log-likelihood gradient is bounded. Run <span class="math">T</span>
+    ascent steps at step size <span class="math">&gamma;</span>. Training on real execution
+    rewards converges at the familiar rate
+    <span class="eq-inline"><img src="static/eq-eps.svg" alt="epsilon(T) = (1 - gamma mu / 4)^T Delta_0"></span>,
+    which both statements below carry unchanged. Everything the world model contributes enters
+    through two numbers: the bias magnitude <span class="math">B</span> and the noise standard
+    deviation <span class="math">&sigma;</span>.</p>
+
+    <div class="thm reveal">
+      <span class="thm-tag">Theorem 1</span>
+      <h4>Training on world model rewards alone</h4>
+      <div class="eq"><img src="static/eq-thm1.svg" style="width:423px"
+        alt="J star minus expected J of theta_T is at most epsilon(T) plus O(M squared B squared) plus O(gamma V_WM)"></div>
+      <p>The bias arrives at full size, the noise arrives damped by the step size. Neither term
+      carries <span class="math">T</span>: <b>no amount of training and no choice of step size
+      removes them</b>. The achievable score stays capped by how wrong the world model is.</p>
+    </div>
+
+    <div class="thm thm-ours reveal">
+      <span class="thm-tag">Theorem 2 &middot; WMRL</span>
+      <h4>Training with both corrections</h4>
+      <div class="eq"><img src="static/eq-thm2.svg" style="width:536px"
+        alt="The same bound with the bias term divided by 1 + T over T naught and the variance term divided by 1 + V_WM over V_E"></div>
+      <p>The leading term is unchanged and the two error terms align one for one with Theorem 1,
+      each divided by a denominator strictly greater than one. Both are therefore strictly smaller
+      the moment the world model is biased or noisy at all.</p>
+    </div>
+
+    <div class="two-col reveal">
+      <div class="card">
+        <span class="tag">The bias factor</span>
+        <div class="den"><img src="static/eq-den1.svg" style="width:74px" alt="1 + T over T naught"></div>
+        <p>Every step feeds fresh anchor pairs to the isotonic fit, so the residual bias keeps
+        shrinking and <span class="math">T<sub>0</sub></span> sets the rate. The permanent floor of
+        Theorem&nbsp;1 <b>contracts to zero</b> as <span class="math">T &rarr; &infin;</span>: in the
+        limit WMRL reaches the same optimum as training on real execution, while paying for real
+        execution on a tenth of the groups.</p>
+      </div>
+      <div class="card">
+        <span class="tag">The variance factor</span>
+        <div class="den"><img src="static/eq-den2.svg" style="width:103px" alt="1 + V_WM over V_E"></div>
+        <p>Inverse-variance fusion puts the update <b>below either reward stream alone</b>, and the
+        factor grows as the anchor stream becomes comparatively more reliable. Nothing is tuned
+        here: the ratio is read off the anchor residual at each step.</p>
+      </div>
+    </div>
+
+    <p class="tabnote reveal" style="margin-top:26px">Both theorems are stated for the GRPO
+    estimator of Section&nbsp;2; the constants, the conditions on <span class="math">T<sub>0</sub></span>,
+    and the full proofs are in the appendix of the paper.</p>
+  </div>
+</section>
+
 <section id="results">
   <div class="wrap">
-    <div class="h2row"><span class="no">03</span><h2>ML research tasks</h2></div>
+    <div class="h2row"><span class="no">04</span><h2>ML research tasks</h2></div>
     <p class="lead reveal">
       WMRL cuts the training compute of real-execution GRPO by 3.1&times; and 3.4&times;, and still scores higher on every benchmark average. The post-trained agents also beat much larger off-the-shelf ones: our 4B passes the 48B agent, our 9B passes the 120B agent.
     </p>
@@ -588,7 +651,7 @@
 
 <section id="embodied" class="alt">
   <div class="wrap">
-    <div class="h2row"><span class="no">04</span><h2>Embodied manipulation</h2></div>
+    <div class="h2row"><span class="no">05</span><h2>Embodied manipulation</h2></div>
     <p class="lead reveal">
       Neither mechanism is specific to AutoResearch, so we apply the same recipe to VLA post-training on LIBERO-Long. Robometer scores eight frames sampled from each rollout as the dense reward, and the single sparse success the environment returns at the end serves as the anchor.
     </p>
@@ -734,7 +797,7 @@
 
 <section id="bibtex">
   <div class="wrap">
-    <div class="h2row"><span class="no">05</span><h2>BibTeX</h2></div>
+    <div class="h2row"><span class="no">06</span><h2>BibTeX</h2></div>
 <pre class="bibtex">@article{yang2026wmrl,
   title   = {Scaling Automatic Research Agents via World Models},
   author  = {Yang, Xiyuan and Sarwar, Sheikh and Cheng, Jingru and Shi, Zhan and
