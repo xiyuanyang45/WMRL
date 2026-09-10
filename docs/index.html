@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WMRL &mdash; Scaling Automatic Research Agents via World Models</title>
+<meta name="description" content="WMRL replaces sandbox execution in RL for AutoResearch agents with a world model, and corrects the resulting bias and noise with Online Debiasing and Inverse-Variance Denoising.">
+
+<meta property="og:title" content="Scaling Automatic Research Agents via World Models">
+<meta property="og:description" content="WMRL trains AutoResearch agents 3-4x faster than real-execution GRPO while scoring higher on held-out benchmarks.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="static/fig1.png">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1 class="title">Scaling Automatic Research Agents<br>via World Models</h1>
+    <p class="venue">arXiv 2608.12564</p>
+
+    <p class="authors">
+      <span class="au"><a href="https://xiyuanyang45.github.io/">Xiyuan Yang</a><sup>1&dagger;</sup>,</span>
+      <span class="au">Sheikh Sarwar<sup>2</sup>,</span>
+      <span class="au">Jingru Cheng<sup>2</sup>,</span>
+      <span class="au">Zhan Shi<sup>2</sup>,</span>
+      <span class="au">Duanshun Li<sup>2</sup>,</span>
+      <span class="au">Huiyuan Chen<sup>2</sup>,</span>
+      <span class="au">Haiyang Zhang<sup>2</sup>,</span>
+      <span class="au">Xing Fan<sup>2</sup>,</span>
+      <span class="au">Chenlei Guo<sup>2</sup>,</span>
+      <span class="au">Jingrui He<sup>1*</sup>,</span>
+      <span class="au">Zhenyu Liao<sup>2*</sup></span>
+    </p>
+    <p class="affil">
+      <span class="au"><sup>1</sup>University of Illinois Urbana-Champaign</span>
+      <span class="au"><sup>2</sup>Amazon</span>
+    </p>
+    <p class="note">
+      <sup>&dagger;</sup>Work done during an internship at Amazon.
+      <sup>*</sup>Corresponding authors.
+    </p>
+
+    <div class="logos">
+      <img src="static/logo-uiuc.png" alt="University of Illinois Urbana-Champaign">
+      <img src="static/logo-primevideo.png" alt="Amazon Prime Video">
+    </div>
+
+    <div class="buttons">
+      <a class="btn" href="https://arxiv.org/abs/2608.12564"><span class="ico">&#9635;</span> arXiv</a>
+      <a class="btn" href="https://arxiv.org/pdf/2608.12564"><span class="ico">&#9776;</span> Paper (PDF)</a>
+      <a class="btn ghost disabled"><span class="ico">&lt;/&gt;</span> Code (coming soon)</a>
+      <a class="btn ghost" href="#bibtex"><span class="ico">&#8220;</span> BibTeX</a>
+    </div>
+  </div>
+</header>
+
+<section class="teaser">
+  <div class="wrap">
+    <figure>
+      <img src="static/fig1.png" alt="AutoResearch trajectories scale asymmetrically: generation batches, execution does not.">
+      <figcaption>
+        <b>AutoResearch trajectories scale asymmetrically, making environment execution the bottleneck, and WMRL removes it.</b>
+        <b>(a)</b> Per research question, the agent proposes a group of solutions <i>S<sub>i</sub></i>, graded by execution into rewards <i>r<sub>i</sub></i>, and RL demands a massive number of such trajectories.
+        <b>(b)</b> Per trajectory, generation amortizes compute via batching, but execution needs one isolated sandbox per solution.
+        <b>(c)</b> Execution compute thus hits capacity first in traditional RL, whereas WMRL scales without this limit.
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="stats">
+      <div class="stat">
+        <span class="num">Reduce Time <em>3.1&times;&ndash;3.4&times;</em></span>
+        <span class="lbl">Training compute against RL with a real sandbox, at both 4B and 9B.</span>
+      </div>
+      <div class="stat">
+        <span class="num">Improved ML Tasks <em>+2.8</em></span>
+        <span class="lbl">Held-out MLE-Dojo percentile, 9B agent over same-scale GRPO.</span>
+      </div>
+      <div class="stat">
+        <span class="num">Ours (9B) <em>&gt; 120B</em></span>
+        <span class="lbl">Our post-trained 9B agent beats off-the-shelf Nemotron-120B-A12B.</span>
+      </div>
+      <div class="stat">
+        <span class="num">Improved Embodied Tasks <em>+3.8</em></span>
+        <span class="lbl">LIBERO-Long success rate, showing the recipe transfers to VLAs.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Overview</h2>
+    <div class="abstract">
+      <p>An AutoResearch agent writes code, runs it, and learns from what comes back. RL is the natural way to train one, but the two halves of a trajectory do not scale alike. Generation batches, so extra trajectories are nearly free. Execution does not: every candidate solution needs its own sandbox on real machine time. Past a certain scale, grading is the training cost.</p>
+
+      <p><b>WMRL</b> hands the grading to a world model, which reads the task and the submitted solution and predicts the outcome in a few forward passes. Now grading batches like generation, and the bottleneck is gone. The predicted reward is imperfect, though, and the imperfection splits cleanly into a systematic bias and a zero-mean noise. Both show up in the convergence bound as their own error term.</p>
+
+      <p>To pay that bill, WMRL keeps about a tenth of groups graded by real execution as an <b>anchor signal</b>, and spends it on one mechanism per term: <b>Online Debiasing</b> for the bias, <b>Inverse-Variance Denoising</b> for the noise. We prove both strictly improve the convergence guarantee, and show they hold up in practice at 4B and 9B, on two held-out benchmarks, and again on embodied VLA post-training.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Method</h2>
+    <p class="lead">
+      The world model takes the same input the sandbox would and returns a predicted score, so the RL pipeline runs unchanged with cheap rewards in place of measured ones.
+    </p>
+    <p>
+      What that costs is visible once the predicted score is written as
+      <span class="math">r&#770;(&tau;) = r(&tau;) + b(&tau;) + &xi;(&tau;)</span>,
+      splitting the error into a systematic bias <span class="math">b</span> and a zero-mean noise <span class="math">&xi;</span>.
+      They enter the convergence bound as two separate terms, <span class="math">O(B<sup>2</sup>)</span> and <span class="math">O(&sigma;<sup>2</sup>)</span>.
+      Estimating either one needs ground truth, so WMRL keeps a thin stream of it. About 10% of groups are graded by both the world model and real execution, and those score pairs drive the two mechanisms below.
+    </p>
+
+    <figure style="margin-top:26px">
+      <img src="static/fig2.png" alt="WMRL corrects world model rewards in two steps: online debiasing and inverse-variance denoising.">
+      <figcaption>
+        <b>WMRL corrects the world model rewards in two steps.</b> Each row is one of the <i>m</i> groups in a batch. Every group is graded by the world model into biased, noisy scores <span class="math">r&#770;</span>, and anchor groups are also graded by real execution. The monotone map <span class="math">f&#770;</span> is fit on the score pairs (<b>Online Debiasing</b>) to remove the bias, and <span class="math">g<sub>E</sub></span> and <span class="math">g<sub>WM</sub></span> are fused by <b>Inverse-Variance Denoising</b> to lower the update variance.
+      </figcaption>
+    </figure>
+
+    <div class="two-col">
+      <div class="card">
+        <span class="tag">Removes the O(B&sup2;) term</span>
+        <h4>Online Debiasing</h4>
+        <p>The anchor pairs show how far the world model has drifted from the truth. We fit a monotone map to them by isotonic regression and push every predicted score through it before advantages are formed. Refitting each step keeps the map current as the drift moves.</p>
+      </div>
+      <div class="card">
+        <span class="tag">Suppresses the O(&sigma;&sup2;) term</span>
+        <h4>Inverse-Variance Denoising</h4>
+        <p>Noise cannot be estimated pointwise, so we suppress it instead. The anchor stream is clean but scarce; the world model stream is noisy but abundant. Both estimate the same gradient, so we fuse them by inverse variance, which lands strictly below either stream alone.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Results on AutoResearch tasks</h2>
+    <p class="lead">
+      WMRL cuts the training compute of real-execution GRPO by 3.1&times; and 3.4&times;, and still scores higher on every benchmark average. The post-trained agents also beat much larger off-the-shelf ones: our 4B passes the 48B agent, our 9B passes the 120B agent.
+    </p>
+
+    <p class="tabtitle"><b>Main results.</b> Leaderboard percentile (%), higher is better. Both benchmarks hold out tasks never trained on. GPU-hours count total training compute.</p>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="method" rowspan="2">Method</th>
+            <th rowspan="2">GPU-hours</th>
+            <th class="spangroup" colspan="4">MLE-Dojo (test)</th>
+            <th class="spangroup sep" colspan="5">DSBench</th>
+          </tr>
+          <tr>
+            <th>Tab</th><th>Text</th><th>Img</th><th>Avg</th>
+            <th class="sep">Bin-Cls</th><th>Multi-Cls</th><th>Regress</th><th>Other</th><th>Avg</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="grouphead"><td colspan="11">Baseline Models</td></tr>
+          <tr>
+            <td class="method">Qwen3.5-4B</td><td>&mdash;</td>
+            <td>13.7</td><td>8.0</td><td>0.2</td><td>7.3</td>
+            <td class="sep">21.9</td><td>11.8</td><td>25.8</td><td>8.8</td><td>17.1</td>
+          </tr>
+          <tr>
+            <td class="method">Qwen3.5-9B</td><td>&mdash;</td>
+            <td>17.4</td><td>8.1</td><td>3.4</td><td>9.6</td>
+            <td class="sep">29.1</td><td>16.0</td><td>36.3</td><td>14.1</td><td>23.9</td>
+          </tr>
+
+          <tr class="grouphead"><td colspan="11">Large Agents</td></tr>
+          <tr>
+            <td class="method">Kimi-48B-A3B</td><td>&mdash;</td>
+            <td>12.3</td><td>10.1</td><td>2.0</td><td>8.1</td>
+            <td class="sep">20.3</td><td>10.0</td><td>29.0</td><td>9.8</td><td>17.3</td>
+          </tr>
+          <tr>
+            <td class="method">Nemotron-120B-A12B</td><td>&mdash;</td>
+            <td>35.1</td><td>18.8</td><td><b>7.6</b></td><td>20.5</td>
+            <td class="sep">38.7</td><td>26.6</td><td><b>40.7</b></td><td>20.6</td><td>31.7</td>
+          </tr>
+
+          <tr class="grouphead"><td colspan="11">RL in Real Environment</td></tr>
+          <tr>
+            <td class="method">Qwen3.5-4B-GRPO</td><td>883</td>
+            <td>24.8</td><td>16.6</td><td>4.3</td><td>15.2</td>
+            <td class="sep">34.3</td><td>17.8</td><td>28.3</td><td>22.4</td><td>25.7</td>
+          </tr>
+          <tr>
+            <td class="method">Qwen3.5-9B-GRPO</td><td>1174</td>
+            <td>33.3</td><td>17.1</td><td>5.9</td><td>18.8</td>
+            <td class="sep">40.9</td><td>26.8</td><td>40.4</td><td>16.7</td><td>31.2</td>
+          </tr>
+
+          <tr class="grouphead"><td colspan="11">RL with Pure World Model</td></tr>
+          <tr>
+            <td class="method">Qwen3.5-4B-WM</td><td>269</td>
+            <td>21.2</td><td>14.6</td><td>3.0</td><td>12.9</td>
+            <td class="sep">27.1</td><td>16.9</td><td>32.5</td><td>16.0</td><td>23.1</td>
+          </tr>
+          <tr>
+            <td class="method">Qwen3.5-9B-WM</td><td>330</td>
+            <td>28.0</td><td>15.9</td><td>4.5</td><td>16.1</td>
+            <td class="sep">35.4</td><td>21.8</td><td>37.9</td><td>16.9</td><td>28.0</td>
+          </tr>
+
+          <tr class="grouphead"><td colspan="11">WMRL (ours)</td></tr>
+          <tr class="ours">
+            <td class="method">Qwen3.5-4B-Ours</td><td>286</td>
+            <td>28.0<span class="up">&uarr;3.2</span></td>
+            <td>16.1<span class="down">&darr;0.5</span></td>
+            <td>5.2<span class="up">&uarr;0.9</span></td>
+            <td>16.4<span class="up">&uarr;1.2</span></td>
+            <td class="sep">35.8<span class="up">&uarr;1.5</span></td>
+            <td>22.3<span class="up">&uarr;4.5</span></td>
+            <td>32.3<span class="up">&uarr;4.0</span></td>
+            <td><b>24.7</b><span class="up">&uarr;2.3</span></td>
+            <td>28.8<span class="up">&uarr;3.1</span></td>
+          </tr>
+          <tr class="ours">
+            <td class="method">Qwen3.5-9B-Ours</td><td>349</td>
+            <td><b>38.0</b><span class="up">&uarr;4.7</span></td>
+            <td><b>19.4</b><span class="up">&uarr;2.3</span></td>
+            <td>7.4<span class="up">&uarr;1.5</span></td>
+            <td><b>21.6</b><span class="up">&uarr;2.8</span></td>
+            <td class="sep"><b>45.4</b><span class="up">&uarr;4.5</span></td>
+            <td><b>26.9</b><span class="up">&uarr;0.1</span></td>
+            <td>39.2<span class="down">&darr;1.2</span></td>
+            <td>19.8<span class="up">&uarr;3.1</span></td>
+            <td><b>32.8</b><span class="up">&uarr;1.6</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="tabnote">
+      Scores are per-task avg@8, averaged within each category. <b>Avg</b> is the mean over categories. <b>Bold</b> marks the best value per column; green and red arrows mark the gain and drop of WMRL over same-scale GRPO.
+    </p>
+
+    <h3>Ablation: the two corrections are complementary</h3>
+    <p>
+      Every ablation run consumes the same two reward streams at the same ratio, and differs only in which correction is active. The plain mixture in the first row stays below real-execution GRPO on every column. Denoising alone adds 0.9 to 1.7 points, debiasing alone adds 2.2 to 2.8, and the larger debiasing share matches the theory, where bias enters the bound at full size while noise enters damped by the step size. Together they lift every column by 2.9 to 4.8 points, more than either alone.
+    </p>
+    <div class="tablewrap">
+      <table style="min-width:520px">
+        <thead>
+          <tr>
+            <th rowspan="2">Online<br>Debiasing</th>
+            <th rowspan="2">Inverse-Variance<br>Denoising</th>
+            <th class="spangroup sep" colspan="2">4B Agent</th>
+            <th class="spangroup sep" colspan="2">9B Agent</th>
+          </tr>
+          <tr>
+            <th class="sep">MLE</th><th>DS</th>
+            <th class="sep">MLE</th><th>DS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>&#9675;</td><td>&#9675;</td><td class="sep">13.5</td><td>25.3</td><td class="sep">16.8</td><td>29.5</td></tr>
+          <tr><td>&#9675;</td><td>&#9679;</td><td class="sep">14.9</td><td>26.2</td><td class="sep">18.0</td><td>31.2</td></tr>
+          <tr><td>&#9679;</td><td>&#9675;</td><td class="sep">15.7</td><td>28.1</td><td class="sep">19.4</td><td>31.7</td></tr>
+          <tr class="ours">
+            <td>&#9679;</td><td>&#9679;</td>
+            <td class="sep"><b>16.4</b><span class="up">&uarr;2.9</span></td>
+            <td><b>28.8</b><span class="up">&uarr;3.5</span></td>
+            <td class="sep"><b>21.6</b><span class="up">&uarr;4.8</span></td>
+            <td><b>32.8</b><span class="up">&uarr;3.3</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="tabnote">
+      A filled circle marks the correction as active. The last row recovers WMRL, and its green arrows give the gain over the uncorrected first row.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Transfer: embodied VLA post-training</h2>
+    <p class="lead">
+      Neither mechanism is specific to AutoResearch, so we apply the same recipe to VLA post-training on LIBERO-Long. Robometer scores eight frames sampled from each rollout as the dense reward, and the single sparse success the environment returns at the end serves as the anchor.
+    </p>
+    <p>
+      Either signal alone barely moves the policy. RL on the sparse outcome adds 0.9 points over the SFT baseline, RL on the raw world model signal adds 1.8. WMRL combines the two and lifts overall success by 3.8 points, with the largest margin on unseen initial states.
+    </p>
+
+    <div class="strip">
+      <img src="static/vla_strip_0.png" alt="LIBERO-Long rollout frame 1">
+      <img src="static/vla_strip_1.png" alt="LIBERO-Long rollout frame 2">
+      <img src="static/vla_strip_2.png" alt="LIBERO-Long rollout frame 3">
+      <img src="static/vla_strip_3.png" alt="LIBERO-Long rollout frame 4">
+    </div>
+
+    <p class="tabtitle"><b>VLA post-training on LIBERO-Long.</b> Success rate (%), higher is better. All RL rows share the SFT initialization.</p>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="method" rowspan="2">Method</th>
+            <th class="spangroup" colspan="3">In-Domain</th>
+            <th class="spangroup sep" colspan="3">Out-of-Distribution</th>
+            <th class="sep" rowspan="2">Overall</th>
+          </tr>
+          <tr>
+            <th>Avg</th><th>Best@8</th><th>All@8</th>
+            <th class="sep">Avg</th><th>Best@8</th><th>All@8</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="grouphead"><td colspan="8">Baseline Models</td></tr>
+          <tr>
+            <td class="method">MiniVLA-1B</td>
+            <td>5.6</td><td>5.6</td><td>5.6</td>
+            <td class="sep">2.9</td><td>2.9</td><td>2.9</td>
+            <td class="sep">3.8</td>
+          </tr>
+          <tr>
+            <td class="method">MiniVLA-1B-SFT</td>
+            <td>37.3</td><td>41.3</td><td>33.1</td>
+            <td class="sep">37.5</td><td>44.7</td><td>32.1</td>
+            <td class="sep">37.4</td>
+          </tr>
+          <tr class="grouphead"><td colspan="8">RL in Real Environment</td></tr>
+          <tr>
+            <td class="method">MiniVLA-1B-GRPO</td>
+            <td>39.3</td><td><b>48.8</b></td><td>34.4</td>
+            <td class="sep">37.8</td><td>45.3</td><td>31.2</td>
+            <td class="sep">38.3</td>
+          </tr>
+          <tr class="grouphead"><td colspan="8">RL with Pure World Model</td></tr>
+          <tr>
+            <td class="method">MiniVLA-1B-WM</td>
+            <td>39.1</td><td>45.6</td><td>34.4</td>
+            <td class="sep">39.3</td><td>45.6</td><td>34.1</td>
+            <td class="sep">39.2</td>
+          </tr>
+          <tr class="grouphead"><td colspan="8">WMRL (ours)</td></tr>
+          <tr class="ours">
+            <td class="method">MiniVLA-1B-Ours</td>
+            <td><b>41.2</b><span class="up">&uarr;1.9</span></td>
+            <td>47.5<span class="down">&darr;1.3</span></td>
+            <td><b>37.5</b><span class="up">&uarr;3.1</span></td>
+            <td class="sep"><b>41.2</b><span class="up">&uarr;3.4</span></td>
+            <td><b>48.8</b><span class="up">&uarr;3.5</span></td>
+            <td><b>37.1</b><span class="up">&uarr;5.9</span></td>
+            <td class="sep"><b>41.2</b><span class="up">&uarr;2.9</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="tabnote">
+      <b>Overall</b> averages over every initial state, seen and unseen. Best@8 counts at least one success of the eight, All@8 counts all eight. <b>Bold</b> marks the best value per column; arrows mark the gain and drop of WMRL over MiniVLA-1B-GRPO.
+    </p>
+  </div>
+</section>
+
+<section id="bibtex">
+  <div class="wrap">
+    <h2>BibTeX</h2>
+<pre class="bibtex">@article{yang2026wmrl,
+  title   = {Scaling Automatic Research Agents via World Models},
+  author  = {Yang, Xiyuan and Sarwar, Sheikh and Cheng, Jingru and Shi, Zhan and
+             Li, Duanshun and Chen, Huiyuan and Zhang, Haiyang and Fan, Xing and
+             Guo, Chenlei and He, Jingrui and Liao, Zhenyu},
+  journal = {arXiv preprint arXiv:2608.12564},
+  year    = {2026}
+}</pre>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>
+      Page template released under the
+      <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> license.
+      Please reuse it freely.
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>
